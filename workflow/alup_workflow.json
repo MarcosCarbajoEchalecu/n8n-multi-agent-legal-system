@@ -1,0 +1,2274 @@
+{
+  "name": "ALUP",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "='1F1349kusT35lw7EFjdI3AKmNJf16z7TL' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed=false\n"
+            },
+            {
+              "name": "files",
+              "value": "=files(id, name)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1808,
+        3920
+      ],
+      "id": "f588e817-6958-43c5-84de-42a32b505b22",
+      "name": " 🔍 Buscar Documentos en Google Drive"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appkxTUkIelqc54ZV",
+          "mode": "list",
+          "cachedResultName": "Untitled Base",
+          "cachedResultUrl": "https://airtable.com/appkxTUkIelqc54ZV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblU6xONbYOiYbwkA",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appkxTUkIelqc54ZV/tblU6xONbYOiYbwkA"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2320,
+        3920
+      ],
+      "id": "8ea34fdb-6e4d-4d78-9d62-0dff0247b128",
+      "name": "Airtable1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "babf2a02-0b7a-4aa1-b534-0507fad38292",
+              "name": "data",
+              "value": "={{ $('Airtable1').all().map(item => item.json.Resumen).join('\\n---\\n') }}",
+              "type": "string"
+            },
+            {
+              "id": "86308b44-87be-4adf-b97a-62d1b6f3cbc9",
+              "name": "ID",
+              "value": "={{ $(' 🔍 Buscar Documentos en Google Drive').first().json.files }}",
+              "type": "string"
+            },
+            {
+              "id": "de8bb58a-3f75-42f8-9111-46d339b5d084",
+              "name": "query",
+              "value": "={{ $('When chat message received').first().json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1488,
+        3920
+      ],
+      "id": "6744edd4-3c24-48a1-a55f-749e8451009e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "Resumen"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -2096,
+        3920
+      ],
+      "id": "9189acaa-62d7-4a88-96fa-5712fe0933c6",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "o3-mini",
+          "mode": "list",
+          "cachedResultName": "O3-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Eres un asistente experto que actúa como validador y priorizador. Tu misión es seleccionar los documentos PDF MÁS RELEVANTES para responder correctamente a una consulta del usuario.\n\nCRITERIOS DE RELEVANCIA:\n- 90-100: Documento esencial, responde directamente la consulta.\n- 70-89: Documento muy útil, información complementaria importante.  \n- 50-69: Documento relacionado, puede aportar contexto.  \n- < 50: Documento irrelevante o poco útil para esta consulta.\n\nINSTRUCCIONES:\n1. Evalúa la relevancia de cada documento (puntuación de 1 a 100).\n2. Selecciona SOLO los documentos con relevancia **mayor o igual a 50**.\n3. De esos, elige **máximo 3 documentos**, ordenados de mayor a menor relevancia.\n4. **Si solo 1 o 2 documentos cumplen los criterios, no devuelvas más.**\n\nFORMATO DE SALIDA (JSON):\n{\n  \"response\": [\n    {\n      \"id\": \"ID_DEL_DOCUMENTO\",\n      \"nombre\": \"Nombre_del_documento.pdf\",\n      \"relevancia\": 95\n    }\n    // ...\n  ]\n}\n\nRECUERDA:  \n- La prioridad es la precisión, no la cantidad.  \n- No rellenes huecos con documentos irrelevantes si no hay suficientes buenos.\n",
+              "role": "system"
+            },
+            {
+              "content": "=PREGUNTA DEL USUARIO:{{ $('Edit Fields').item.json.query }}\n\nRECOMENDACIÓN PREVIA DEL AGENTE: {{ $json.output }}\n\nDOCUMENTOS DISPONIBLES: {{ $('Edit Fields').item.json.ID }}\n\nAnaliza la pregunta, evalúa cada documento y selecciona los 3 más relevantes ordenados por relevancia.\n\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1904,
+        4048
+      ],
+      "id": "e94321c1-87af-4461-88cd-f7360e69b245",
+      "name": "🧠 Analizar Pregunta "
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2624,
+        4048
+      ],
+      "id": "b54bc951-e8bb-480e-845f-e97b657494a5",
+      "name": "📂 Procesar Documentos Uno a Uno"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3248,
+        4160
+      ],
+      "id": "0f0e2b0c-c264-4f88-b154-6e93f7c8d136",
+      "name": "📁 Descargar Documento PDF"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        3488,
+        4160
+      ],
+      "id": "f4345ff5-f283-4859-bf0d-ffafefbbcfc7",
+      "name": "📄 Leer Texto del Documento"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "=doc_text_{{$execution.id}}",
+        "messageData": "={{$node[\"📄 Leer Texto del Documento\"].json.text}}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        4480,
+        4832
+      ],
+      "id": "8bc31d3b-8288-4600-8ce9-03763b0cfac4",
+      "name": "📦 Guardar Documento en Memoria Temporal"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=doc_text_{{$execution.id}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        3792
+      ],
+      "id": "ea1e6991-f256-42a2-bdcb-b60e6bd636d0",
+      "name": " 📤 Recuperar Documento de Memoria"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=doc_text_{{$execution.id}}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3344,
+        3792
+      ],
+      "id": "8e846b3c-e6c9-4b6d-a5f8-660f76d3345d",
+      "name": "🧽 Borrar Documento de Memoria"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=doc_text_{{$execution.id}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        3744,
+        3904
+      ],
+      "id": "a918a7c9-0d73-4798-b30f-da962b524e55",
+      "name": "🧠 Memoria Contextual "
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Pregunta del usuario: {{ $('When chat message received').item.json.chatInput }}\nContexto:{{ $json.propertyName }}",
+        "options": {
+          "systemMessage": "=## 🧠 Instrucciones para el asistente\n\nEres un asistente **experto, claro y preciso**. Tu objetivo es ofrecer al usuario **la información más completa posible** sobre su consulta, **utilizando exclusivamente el contenido de los documentos proporcionados junto con la pregunta**.\n\n---\n\n### 📌 Normas de comportamiento\n\n- Utiliza **toda la información útil, clara y relevante** de los documentos, incluso si es complementaria, siempre que esté relacionada directamente con la pregunta.\n- **No uses conocimiento externo, doctrinal ni general**, aunque pueda parecer relacionado.\n- **No completes ideas ni interpretes lagunas**. Si un concepto no está claramente desarrollado en los documentos, indícalo.\n- Puedes **parafrasear, resumir o reorganizar** para mejorar la comprensión, **pero sin añadir ni deducir contenido no expresado directamente**.\n\n---\n\n### 🧱 Estructura de la respuesta\n\n1. **Organiza por bloques temáticos** según lo que exige la pregunta (por ejemplo: definición legal, requisitos, procedimiento, sanciones...).\n2. **Indica siempre de qué documento proviene cada bloque** (nombre + apartado, capítulo o párrafo si es posible).\n3. Si usas más de un documento, **separa claramente sus aportaciones**.\n4. Resume solo si el contenido es muy extenso o repetitivo. Si es claro, **reprodúcelo o reorganízalo directamente**.\n\n---\n\n### ⚠️ Si no hay información suficiente para responder con precisión\n\n- Dilo claramente.\n- Explica qué parte falta o por qué no se puede cubrir solo con los documentos.\n\n---\n\n### ✅ Cierre sugerido (si aplica)\n\n> _“Esta respuesta se ha elaborado exclusivamente con base en el/los documento/s proporcionado/s. Para una visión completa, podría requerirse consultar otras normas relacionadas si la pregunta lo exige.”_\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        3584,
+        3712
+      ],
+      "id": "82e8a983-c2da-4eaf-bf1a-c061479beec3",
+      "name": "🤖 Agente Inteligente "
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2df30e7f-6939-4873-b01a-9f06f2c632a0",
+              "name": "response",
+              "value": "={{ $json.message.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4528,
+        3712
+      ],
+      "id": "b5c464b0-824a-4f57-93cd-7192d7bc29d7",
+      "name": "📝 Mostrar Respuesta al Usuario"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer los response del JSON\nconst responses = $json.message.content.response;\n\n// Tomar máximo 3 y devolver solo los IDs\nconst top3 = responses.slice(0, 3);\n\nreturn top3.map(doc => {\n    return {\n        id: doc.id\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        4048
+      ],
+      "id": "21783eea-1b6d-4f5b-8ead-27bab60ce93b",
+      "name": "LIMPIAR"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1a8d7aaa-f7d4-4d63-910f-8af0529b1579",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3072,
+        4160
+      ],
+      "id": "0a39484f-d446-4fec-b254-f56ebeecedb6",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.query }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "delegaciones",
+              "description": "Competencias delegadas / municipales"
+            },
+            {
+              "category": "animales",
+              "description": "Normativa sobre animales"
+            },
+            {
+              "category": "Higiene_Control",
+              "description": "Higiene y seguridad alimentaria"
+            },
+            {
+              "category": "Marco_legal_y_consumo",
+              "description": "Normativa alimentaria y consumo"
+            },
+            {
+              "category": "venta_ambulante",
+              "description": "Licencias y permisos para comercio ambulante"
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "Eres un clasificador experto en normativa municipal.\nTAREA: Analiza la consulta del usuario y determina QUÉ CATEGORÍAS aplican.\nIMPORTANTE:\n\nPuedes seleccionar MÚLTIPLES categorías si la consulta abarca varios temas\nResponde SOLO con las categorías aplicables separadas por comas\nUsa exactamente estos nombres: delegaciones, animales, Higiene_Control, Marco_legal_y_consumo, venta_ambulante\n\nEJEMPLOS:\n\n\"¿Dónde tramito la licencia de apertura?\" → delegaciones\n\"¿Puedo vender bocadillos en la calle?\" → Marco_legal_y_consumo,venta_ambulante\n\"Problemas de temperatura en frigoríficos del restaurante\" → Higiene_Control\n\"Normativa sobre etiquetado de alimentos\" → Marco_legal_y_consumo\n\"Requisitos para vender comida para perros\" → Marco_legal_y_consumo,animales,venta_ambulante\n\"¿Qué delegación se encarga de los animales?\" → delegaciones,animales\n\"Intoxicación alimentaria en supermercado\" → Higiene_Control\n\"¿Puedo montar un puesto de perritos calientes?\" → Marco_legal_y_consumo,venta_ambulante\n\"Contacto para tramitar licencia de venta ambulante\" → delegaciones,venta_ambulante\n\"Sistema APPCC en mi establecimiento\" → Higiene_Control\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        3920
+      ],
+      "id": "ada20041-05b4-4895-8426-defdc3fd3c72",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONSULTA: {{ $json.query }}\n\nDOCUMENTOS CON RESUMENES:\n{{ $('Aggregate').item.json.Resumen[4] }}\n{{ $('Aggregate').item.json.Resumen[2] }}\n\nAREAS DE COMPETENCIA:\n\nDISTRITOS (gestión local):\n- Competencias de distrito específico\n- Actividades culturales/deportivas locales\n- Mantenimiento espacios distrito\n- Quejas vecinales\n- Juntas Municipales\n\nVICEALCALDIA (competencias centrales):\n- Policía Municipal\n- Bomberos/SAMUR/Emergencias\n- Transparencia/Comunicación\n- Línea Madrid\n- Coordinación territorial\n\nEJEMPLOS SCORING:\n- \"¿Puede Usera organizar conciertos?\" → DISTRITOS (relevancia: 90)\n- \"¿Cómo contactar Policía?\" → VICEALCALDIA (relevancia: 95)\n- \"¿Quién gestiona ruido?\" → AMBOS (DISTRITOS: 85, VICEALCALDIA: 80)\n\nEvalúa la relevancia de cada documento para esta consulta y devuelve JSON rankeado.CONSULTA: {{ $json.query }}\n\nDOCUMENTOS CON RESUMENES:\n{{ $('Aggregate').item.json.Resumen[4] }}\n{{ $('Aggregate').item.json.Resumen[2] }}\n\nAREAS DE COMPETENCIA:\n\nDISTRITOS (gestión local):\n- Competencias de distrito específico\n- Actividades culturales/deportivas locales\n- Mantenimiento espacios distrito\n- Quejas vecinales\n- Juntas Municipales\n\nVICEALCALDIA (competencias centrales):\n- Policía Municipal\n- Bomberos/SAMUR/Emergencias\n- Transparencia/Comunicación\n- Línea Madrid\n- Coordinación territorial\n\nEJEMPLOS SCORING:\n- \"¿Puede Usera organizar conciertos?\" → DISTRITOS (relevancia: 90)\n- \"¿Cómo contactar Policía?\" → VICEALCALDIA (relevancia: 95)\n- \"¿Quién gestiona ruido?\" → AMBOS (DISTRITOS: 85, VICEALCALDIA: 80)\n\nEvalúa la relevancia de cada documento para esta consulta y devuelve JSON rankeado.",
+        "options": {
+          "systemMessage": "Eres un experto en competencias del Ayuntamiento de Madrid (distritos y vicealcaldía). Analiza consultas y rankea documentos relevantes por relevancia 1-100.\n\nDOCUMENTOS DISPONIBLES:\n- DISTRITOS: Competencias locales/territoriales\n- VICEALCALDIA: Competencias centrales/estratégicas\n\nCRITERIOS DE RELEVANCIA:\n- 90-100: Documento esencial para responder la consulta\n- 70-89: Documento muy útil, información complementaria importante\n- 50-69: Documento relacionado, aporta contexto\n- 1-49: Poco relevante (NO incluir)\n\nREGLAS:\n- Distrito específico → DISTRITOS (alta relevancia)\n- Competencia central → VICEALCALDIA (alta relevancia)\n- En caso de duda → AMBOS con relevancia media-alta\n- Solo incluir documentos con relevancia >= 50\n- Máximo 2 documentos\n\nFORMATO RESPUESTA COMPETENCIAS:\n{\n  \"pdfs_relevantes\": [\n    {\n      \"id\": \"ID_DOCUMENTO\",\n      \"nombre\": \"nombre_archivo.pdf\",\n      \"relevancia\": 95,\n      \"razon\": \"Contiene competencias específicas para responder la consulta\"\n    }\n  ],\n  \"area_aplicable\": true,\n  \"total_encontrados\": 1\n}\n\nFORMATO RESPUESTA NO COMPETENCIAS:\n{\n  \"pdfs_relevantes\": [],\n  \"area_aplicable\": false,\n  \"total_encontrados\": 0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        3168
+      ],
+      "id": "306c1c17-8826-42ea-818e-547fc60d9767",
+      "name": "🧩 Agente_Delegaciones"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONSULTA: {{ $json.query }}\n\nDOCUMENTOS CON RESUMENES:\n{{ $('Aggregate').item.json.Resumen[5] }}{{ $('Aggregate').item.json.Resumen[6] }}{{ $('Aggregate').item.json.Resumen[3] }}{{ $('Aggregate').item.json.Resumen[0] }}{{ $('Aggregate').item.json.Resumen[1] }}{{ $('Aggregate').item.json.Resumen[7] }}{{ $('Aggregate').item.json.Resumen[8] }}{{ $('Aggregate').item.json.Resumen[9] }}\n\nAREAS TEMATICAS:\n\nANIMALES PELIGROSOS:\n- Razas peligrosas, licencias, seguros\n- Pit Bull, Rottweiler, Dogo Argentino\n- Bozal, correa, registro municipal\n- INCLUIR: LEY 50/1999 + RD 287/2002 + DECRETO 30/2003\n\nANIMALES DE COMPAÑIA (general):\n- Tenencia responsable, bienestar\n- Adopción, maltrato, abandono\n- Identificación, esterilización, seguros\n- INCLUIR: LEY 7/2023 + LEY 4/2016 + ORDENANZA MUNICIPAL\n\nFAUNA SILVESTRE:\n- Animales autóctonos/exóticos\n- Especies invasoras, protegidas\n- Zoológicos, centros recuperación\n- INCLUIR: LEY 2/1991\n\nTRANSPORTE COMERCIAL:\n- Transporte profesional animales\n- Exportación, ferias ganaderas\n- Vehículos autorizados\n- INCLUIR: REGLAMENTO CE 1/2005\n\nCONFLICTOS MUNICIPALES:\n- Problemas vecinales, ruidos\n- Limpieza, espacios públicos\n- INCLUIR: ORDENANZA MUNICIPAL + normativa superior\n\nEJEMPLOS SCORING:\n- \"¿Necesito licencia para mi Rottweiler?\" → LEY 50/1999 (95), RD 287/2002 (90), DECRETO 30/2003 (85)\n- \"¿Puedo adoptar un gato?\" → LEY 7/2023 (90), LEY 4/2016 (85), ORDENANZA MUNICIPAL (80)\n- \"¿Cómo denunciar maltrato?\" → LEY 7/2023 (95), LEY 4/2016 (85), ORDENANZA MUNICIPAL (75)\n- \"¿Puedo tener un loro?\" → LEY 2/1991 (90), LEY 7/2023 (70)\n\nEvalúa la relevancia de cada documento para esta consulta y devuelve JSON rankeado.",
+        "options": {
+          "systemMessage": "Eres experto en legislación de protección animal y bienestar animal. Analiza consultas y rankea documentos relevantes por relevancia 1-100.\n\nDOCUMENTOS DISPONIBLES:\n- LEY 50/1999: Animales potencialmente peligrosos (base estatal)\n- RD 287/2002: Desarrollo de Ley 50/1999 (razas, licencias, medidas)\n- DECRETO 30/2003: Aplicación en Madrid de animales peligrosos\n- LEY 2/1991: Fauna y flora silvestres Madrid\n- LEY 7/2023: Protección y bienestar animal (nueva estatal)\n- LEY 4/2016: Protección animales compañía Madrid\n- ORDENANZA MUNICIPAL TENENCIA DE ANIMALES: Tenencia y protección municipal\n- REGLAMENTO CE 1/2005: Transporte animales (europeo)\n\nCRITERIOS DE RELEVANCIA:\n- 90-100: Documento esencial para responder la consulta\n- 70-89: Documento muy útil, información complementaria importante\n- 50-69: Documento relacionado, aporta contexto\n- 1-49: Poco relevante (NO incluir)\n\nREGLAS:\n- Animales peligrosos → LEY 50/1999 + RD 287/2002 + DECRETO 30/2003 (alta relevancia)\n- Bienestar general → LEY 7/2023 + LEY 4/2016 + ORDENANZA (alta relevancia)\n- Fauna silvestre → LEY 2/1991 (alta relevancia)\n- Transporte comercial → REGLAMENTO CE 1/2005 (alta relevancia)\n- En caso de duda → incluir múltiples normativas\n- Solo incluir documentos con relevancia >= 50\n- Máximo 6 documentos\n\nFORMATO RESPUESTA ANIMALES:\n{\n  \"pdfs_relevantes\": [\n    {\n      \"id\": \"ID_DOCUMENTO\",\n      \"nombre\": \"nombre_archivo.pdf\",\n      \"relevancia\": 95,\n      \"razon\": \"Normativa específica para el tipo de consulta\"\n    }\n  ],\n  \"area_aplicable\": true,\n  \"total_encontrados\": 3\n}\n\nFORMATO RESPUESTA NO ANIMALES:\n{\n  \"pdfs_relevantes\": [],\n  \"area_aplicable\": false,\n  \"total_encontrados\": 0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        3632
+      ],
+      "id": "0cb5d2dc-3e5c-4751-a246-7f99222b0273",
+      "name": "🐾 Agente_Animales"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONSULTA: {{ $json.query }}\n\nDOCUMENTOS CON RESUMENES:\n{{ $('Aggregate').item.json.Resumen[24] }}\n-------------------------------------------------------------------------------\n{{ $('Aggregate').item.json.Resumen[25] }}\n-------------------------------------------------------------------------------\n{{ $('Aggregate').item.json.Resumen[28] }}\n\nAREAS TEMATICAS:\n\nMARCO LEGAL Y AUTORIZACIONES:\n- Requisitos para ejercer venta ambulante\n- Inscripción Registro Comerciantes Ambulantes\n- Carné Profesional\n- Autorizaciones municipales (15 años, prorrogables)\n- INCLUIR: LEY 1/1997 + DECRETO 17/1998 + ORDENANZA MUNICIPAL\n\nMERCADILLOS Y ORGANIZACIÓN:\n- Ubicación y condiciones de mercadillos\n- Puestos numerados, pasillos libres\n- Límite 5% puestos por titular\n- Dimensiones, horarios, tasas\n- INCLUIR: DECRETO 17/1998 + ORDENANZA MUNICIPAL\n\nPRODUCTOS Y RESTRICCIONES:\n- Productos permitidos/prohibidos\n- Prohibición perecederos sin envasado/frío\n- Carne, pescado, lácteos frescos, bollería rellena\n- Condiciones higiénico-sanitarias\n- INCLUIR: DECRETO 17/1998 + ORDENANZA MUNICIPAL\n\nMODALIDADES ESPECIALES:\n- Venta itinerante (food-trucks)\n- Fiestas populares\n- Puestos aislados\n- Venta sectorial\n- INCLUIR: LEY 1/1997 + DECRETO 17/1998\n\nDOCUMENTACION Y OBLIGACIONES:\n- Estar al día Hacienda/Seguridad Social\n- Emisión facturas\n- Exhibición carné y autorización\n- Precios visibles\n- INCLUIR: DECRETO 17/1998 + ORDENANZA MUNICIPAL\n\nINFRACCIONES Y SANCIONES:\n- Faltas leves, graves, muy graves\n- Multas progresivas\n- Decomiso productos\n- Inspección municipal\n- INCLUIR: LEY 1/1997 + ORDENANZA MUNICIPAL\n\nEJEMPLOS SCORING:\n- \"¿Cómo conseguir licencia venta ambulante?\" → LEY 1/1997 (90), DECRETO 17/1998 (95), ORDENANZA (85)\n- \"¿Puedo vender comida casera?\" → DECRETO 17/1998 (95), ORDENANZA (90)\n- \"¿Qué multa por vender sin permiso?\" → LEY 1/1997 (90), ORDENANZA (95)\n- \"¿Cómo organizar mercadillo?\" → DECRETO 17/1998 (95), ORDENANZA (90)\n\nEvalúa la relevancia de cada documento para esta consulta y devuelve JSON rankeado.",
+        "options": {
+          "systemMessage": "Eres experto en legislación de venta ambulante y comercio no sedentario. Analiza consultas y rankea documentos relevantes por relevancia 1-100.\n\nDOCUMENTOS DISPONIBLES:\n- LEY 1/1997: Venta ambulante Comunidad de Madrid (marco legal base)\n- DECRETO 17/1998: Reglamento desarrollo Ley 1/1997 (detalles prácticos)\n- ORDENANZA MUNICIPAL MADRID 2003: Venta ambulante municipal (aplicación local)\n\nCRITERIOS DE RELEVANCIA:\n- 90-100: Documento esencial para responder la consulta\n- 70-89: Documento muy útil, información complementaria importante\n- 50-69: Documento relacionado, aporta contexto\n- 1-49: Poco relevante (NO incluir)\n\nREGLAS:\n- Marco legal general → LEY 1/1997 (alta relevancia)\n- Detalles prácticos/operativos → DECRETO 17/1998 (alta relevancia)\n- Aplicación municipal Madrid → ORDENANZA MUNICIPAL (alta relevancia)\n- Autorizaciones/licencias → incluir las 3 normativas\n- Mercadillos/organización → DECRETO + ORDENANZA (alta relevancia)\n- Productos permitidos/prohibidos → DECRETO + ORDENANZA (alta relevancia)\n- Sanciones/infracciones → LEY + ORDENANZA (alta relevancia)\n- Solo incluir documentos con relevancia >= 50\n- Máximo 3 documentos\n\nFORMATO RESPUESTA VENTA AMBULANTE:\n{\n  \"pdfs_relevantes\": [\n    {\n      \"id\": \"ID_DOCUMENTO\",\n      \"nombre\": \"nombre_archivo.pdf\",\n      \"relevancia\": 95,\n      \"razon\": \"Normativa específica para el tipo de consulta\"\n    }\n  ],\n  \"area_aplicable\": true,\n  \"total_encontrados\": 2\n}\n\nFORMATO RESPUESTA NO VENTA AMBULANTE:\n{\n  \"pdfs_relevantes\": [],\n  \"area_aplicable\": false,\n  \"total_encontrados\": 0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        5072
+      ],
+      "id": "877cb6c9-736b-4ca9-811c-47a1e719e064",
+      "name": "🍽️ Agente_Venta Ambulante"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONSULTA: {{ $json.query }}\n\nDOCUMENTOS CON RESUMENES:\n{{ $('Aggregate').item.json.Resumen[26] }}{{ $('Aggregate').item.json.Resumen[22] }}{{ $('Aggregate').item.json.Resumen[13] }}{{ $('Aggregate').item.json.Resumen[18] }}{{ $('Aggregate').item.json.Resumen[14] }}{{ $('Aggregate').item.json.Resumen[23] }}{{ $('Aggregate').item.json.Resumen[12] }}{{ $('Aggregate').item.json.Resumen[11] }}\n\nAREAS TEMATICAS:\n\nETIQUETADO E INFORMACIÓN:\n- Etiquetas obligatorias y nutricionales\n- Alérgenos, ingredientes, origen\n- Alimentos sin envasar, a granel\n- INCLUIR: REGLAMENTO UE 1169/2011, RD 126/2015\n\nMARCO LEGAL GENERAL:\n- Principios legislación alimentaria\n- Trazabilidad, análisis riesgo\n- Responsabilidad operadores\n- INCLUIR: REGLAMENTO CE 178/2002, LEY 17/2011\n\nLICENCIAS Y AUTORIZACIONES:\n- Apertura establecimientos alimentarios\n- Declaraciones responsables\n- Permisos actividades\n- INCLUIR: ORDENANZA 6/2022\n\nPROTECCIÓN CONSUMIDORES:\n- Derechos consumidores\n- Información veraz, precios\n- Reclamaciones, garantías\n- INCLUIR: LEY 11/1998\n\nSEGURIDAD ALIMENTARIA Y NUTRICIÓN:\n- Estrategias nutricionales\n- Publicidad alimentaria\n- Alertas alimentarias\n- INCLUIR: LEY 17/2011\n\nPROCEDIMIENTOS ADMINISTRATIVOS:\n- Trámites administrativos\n- Recursos, notificaciones\n- Silencio administrativo\n- INCLUIR: LEY 39/2015\n\nSISTEMA SANITARIO:\n- Competencias sanitarias\n- Coordinación institucional\n- INCLUIR: LEY 12/2001\n\nEJEMPLOS SCORING:\n- \"¿Qué poner en etiqueta?\" → REGLAMENTO UE 1169/2011 (95), RD 126/2015 (85)\n- \"¿Responsabilidad operador?\" → REGLAMENTO CE 178/2002 (90), LEY 17/2011 (85)\n- \"¿Licencia para restaurante?\" → ORDENANZA 6/2022 (95)\n- \"¿Reclamar producto defectuoso?\" → LEY 11/1998 (90)\n\nEvalúa la relevancia de cada documento para esta consulta y devuelve JSON rankeado.",
+        "options": {
+          "systemMessage": "Eres experto en marco legal alimentario, etiquetado, información al consumidor y licencias. Analiza consultas y rankea documentos relevantes por relevancia 1-100.\n\nDOCUMENTOS DISPONIBLES:\n- REGLAMENTO CE 178/2002: Principios legislación alimentaria UE\n- REGLAMENTO UE 1169/2011: Información alimentaria consumidor\n- LEY 17/2011: Seguridad alimentaria y nutrición España\n- RD 126/2015: Información alimentos sin envasar\n- LEY 11/1998: Protección consumidores Madrid\n- ORDENANZA 6/2022: Licencias urbanísticas Madrid\n- LEY 39/2015: Procedimiento administrativo común\n- LEY 12/2001: Sistema sanitario Madrid\n\nCRITERIOS DE RELEVANCIA:\n- 90-100: Documento esencial para responder la consulta\n- 70-89: Documento muy útil, información complementaria importante\n- 50-69: Documento relacionado, aporta contexto\n- 1-49: Poco relevante (NO incluir)\n\nREGLAS:\n- Etiquetado/información → REGLAMENTO UE 1169/2011, RD 126/2015 (alta relevancia)\n- Marco legal general → REGLAMENTO CE 178/2002, LEY 17/2011 (alta relevancia)\n- Licencias/autorizaciones → ORDENANZA 6/2022 (alta relevancia)\n- Protección consumidores → LEY 11/1998 (alta relevancia)\n- Procedimientos administrativos → LEY 39/2015 (relevancia media)\n- Sistema sanitario → LEY 12/2001 (relevancia media)\n- Solo incluir documentos con relevancia >= 50\n- Máximo 6 documentos\n\nFORMATO RESPUESTA MARCO LEGAL:\n{\n  \"pdfs_relevantes\": [\n    {\n      \"id\": \"ID_DOCUMENTO\",\n      \"nombre\": \"nombre_archivo.pdf\",\n      \"relevancia\": 95,\n      \"razon\": \"Normativa específica para marco legal/consumo alimentario\"\n    }\n  ],\n  \"area_aplicable\": true,\n  \"total_encontrados\": 3\n}\n\nFORMATO RESPUESTA NO MARCO LEGAL:\n{\n  \"pdfs_relevantes\": [],\n  \"area_aplicable\": false,\n  \"total_encontrados\": 0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        4544
+      ],
+      "id": "8657eeae-35e0-4433-a60e-3bb9529ceb44",
+      "name": " AGENTE_ALIMENTACIÓN_2: MARCO LEGAL Y CONSUMO"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONSULTA: {{ $json.query }}\n\nDOCUMENTOS CON RESUMENES:\n{{ $('Aggregate').item.json.Resumen[15] }}{{ $('Aggregate').item.json.Resumen[27] }}{{ $('Aggregate').item.json.Resumen[21] }}{{ $('Aggregate').item.json.Resumen[20] }}{{ $('Aggregate').item.json.Resumen[19] }}{{ $('Aggregate').item.json.Resumen[16] }}{{ $('Aggregate').item.json.Resumen[17] }}{{ $('Aggregate').item.json.Resumen[10] }}\n\nAREAS TEMATICAS:\n\nAPPCC Y AUTOCONTROL:\n- Sistemas APPCC obligatorios\n- Autocontrol en establecimientos\n- Trazabilidad, registros\n- INCLUIR: REGLAMENTO CE 852/2004, RD 1021/2022\n\nHIGIENE ALIMENTOS ORIGEN ANIMAL:\n- Carne, pescado, lácteos, huevos\n- Mataderos, industrias cárnicas\n- Marca oval CE\n- INCLUIR: REGLAMENTO CE 853/2004\n\nMICROBIOLOGÍA Y ANÁLISIS:\n- Límites microbiológicos\n- Salmonella, Listeria, Campylobacter\n- Vida útil, muestreo\n- INCLUIR: REGLAMENTO CE 2073/2005\n\nCOMERCIO MINORISTA:\n- Supermercados, bares, restaurantes\n- Temperaturas conservación\n- Food-trucks, degustación\n- INCLUIR: RD 1021/2022, OPS 2014\n\nPRODUCTOS ARTESANALES:\n- Flexibilidades higiene\n- Productos tradicionales\n- Pequeñas explotaciones\n- INCLUIR: RD 1086/2020\n\nCONTROL OFICIAL E INSPECCIÓN:\n- Planes control oficial\n- Inspecciones sanitarias\n- Medidas cautelares, sanciones\n- INCLUIR: PNCOCA, LEY 28/2015, OPS 2014\n\nEJEMPLOS SCORING:\n- \"¿Cómo implantar APPCC?\" → REGLAMENTO CE 852/2004 (95), RD 1021/2022 (90)\n- \"¿Límites Listeria?\" → REGLAMENTO CE 2073/2005 (95)\n- \"¿Higiene matadero?\" → REGLAMENTO CE 853/2004 (95)\n- \"¿Inspección restaurante?\" → OPS 2014 (90), RD 1021/2022 (85)\n\nEvalúa la relevancia de cada documento para esta consulta y devuelve JSON rankeado.",
+        "options": {
+          "systemMessage": "Eres experto en higiene alimentaria, APPCC, microbiología y control oficial. Analiza consultas y rankea documentos relevantes por relevancia 1-100.\n\nDOCUMENTOS DISPONIBLES:\n- REGLAMENTO CE 852/2004: Higiene general alimentos\n- REGLAMENTO CE 853/2004: Higiene alimentos origen animal\n- REGLAMENTO CE 2073/2005: Criterios microbiológicos\n- RD 1021/2022: Comercio minorista alimentario\n- RD 1086/2020: Flexibilidades higiene alimentaria\n- OPS 2014: Protección salubridad pública Madrid\n- PNCOCA 2021-2025: Plan control cadena alimentaria\n- LEY 28/2015: Calidad alimentaria España\n\nCRITERIOS DE RELEVANCIA:\n- 90-100: Documento esencial para responder la consulta\n- 70-89: Documento muy útil, información complementaria importante\n- 50-69: Documento relacionado, aporta contexto\n- 1-49: Poco relevante (NO incluir)\n\nREGLAS:\n- APPCC/autocontrol → REGLAMENTO CE 852/2004, RD 1021/2022 (alta relevancia)\n- Higiene origen animal → REGLAMENTO CE 853/2004 (alta relevancia)\n- Microbiología/análisis → REGLAMENTO CE 2073/2005 (alta relevancia)\n- Comercio minorista → RD 1021/2022, OPS 2014 (alta relevancia)\n- Flexibilidades/artesanales → RD 1086/2020 (alta relevancia)\n- Control oficial/inspección → PNCOCA, LEY 28/2015, OPS 2014 (alta relevancia)\n- Solo incluir documentos con relevancia >= 50\n- Máximo 6 documentos\n\nFORMATO RESPUESTA HIGIENE:\n{\n  \"pdfs_relevantes\": [\n    {\n      \"id\": \"ID_DOCUMENTO\",\n      \"nombre\": \"nombre_archivo.pdf\",\n      \"relevancia\": 95,\n      \"razon\": \"Normativa específica para higiene/control alimentario\"\n    }\n  ],\n  \"area_aplicable\": true,\n  \"total_encontrados\": 4\n}\n\nFORMATO RESPUESTA NO HIGIENE:\n{\n  \"pdfs_relevantes\": [],\n  \"area_aplicable\": false,\n  \"total_encontrados\": 0\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        4064
+      ],
+      "id": "158b1fff-a111-4c60-9c20-f1cd217f0543",
+      "name": "AGENTE_ALIMENTACIÓN_1: HIGIENE Y CONTROL"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Eres un experto sintetizador de información legal. Tu misión es crear UNA respuesta final óptima combinando múltiples análisis parciales de documentos diferentes.\n\nINSTRUCCIONES:\n- **SIEMPRE unifica TODOS los documentos en una respuesta única**\n- Analiza cada output individual de todos los documentos disponibles\n- Identifica información complementaria, contradictoria o redundante\n- Crea una respuesta unificada, coherente y completa que integre TODA la información\n- Elimina repeticiones innecesarias entre documentos\n- Prioriza la información más relevante para la pregunta\n- Mantén las citas a documentos específicos de cada fuente\n- Si hay contradicciones entre documentos, identifícalas claramente\n- **NUNCA devuelvas respuestas separadas por documento**\n\nESTRUCTURA DE RESPUESTA:\n1. Respuesta directa y clara\n2. Información organizada por bloques temáticos\n3. Referencias específicas a documentos\n4. Nota final si hay aspectos que requieren consulta adicional\n\nEJEMPLO DE SÍNTESIS:\n\n**PREGUNTA**: \"¿Qué documentos necesito para constituir una SL?\"\n\n**RESPUESTAS INDIVIDUALES**:\n- Documento 1: \"Necesitas escritura pública ante notario (Art. 22 LSC)\"\n- Documento 2: \"Escritura notarial, CIF provisional, certificado negativo de denominación\"\n- Documento 3: \"Escritura pública, inscripción registral (Art. 19 RRM)\"\n\n**RESPUESTA SINTETIZADA**:\n\nPara constituir una Sociedad Limitada necesitas cumplir los siguientes requisitos documentales:\n\n### Documentos Obligatorios\n1. **Certificado negativo de denominación social** - Registro Mercantil Central\n2. **Escritura pública de constitución** ante notario (Art. 22 Ley de Sociedades de Capital)\n3. **Obtención del CIF provisional** - Agencia Tributaria\n4. **Inscripción en el Registro Mercantil** (Art. 19 Reglamento del Registro Mercantil)\n\n### Proceso Secuencial\nLa constitución sigue un orden específico: certificado → escritura → CIF → inscripción registral.\n\n**Referencias**: Ley de Sociedades de Capital (Art. 22), Reglamento del Registro Mercantil (Art. 19)\n\n---\n\nTAREA: **OBLIGATORIO** - Sintetiza TODA la información de TODOS los documentos en UNA ÚNICA respuesta final que responda completamente la pregunta original, combine lo mejor de cada análisis de cada documento y elimine redundancias. NO generes respuestas separadas.",
+              "role": "system"
+            },
+            {
+              "content": "=PREGUNTA ORIGINAL: {{ $('Edit Fields').item.json.query }}\n\nRESPUESTAS AGRUPADAS POR DOCUMENTO:\n\n{{ $json.unified_response }}\n\nTAREA: Sintetiza toda esta información en UNA respuesta clara, formal y seria, pero fácil de entender, que responda completamente a la pregunta original.  \nCombina lo mejor de cada análisis y elimina redundancias, encabezados, formatos markdown o símbolos innecesarios.  \nSiempre trata de basarte en artículos legales o documentos oficiales para fundamentar la respuesta.  \nSolo entrega el texto limpio, sin JSON ni etiquetas.\n\nEJEMPLOS DE RESPUESTA ESPERADA:\n\nEjemplo 1:  \nPara montar un negocio de venta ambulante de comida en Madrid, necesita obtener la licencia de actividad específica para venta ambulante del Ayuntamiento, un permiso para ocupar la vía pública y cumplir con requisitos sanitarios como el registro sanitario y formación en manipulación de alimentos. Además, debe respetar las zonas y horarios permitidos y pagar las tasas municipales correspondientes, según lo establecido en la normativa vigente.\n\nEjemplo 2:  \nUn perro de raza pitbull se considera potencialmente peligroso según el Real Decreto 287/2002 cuando pertenece a las razas indicadas o presenta características físicas o comportamientos agresivos. Es fundamental consultar dicha normativa para garantizar el cumplimiento legal y adoptar las medidas adecuadas para su tenencia.\n\n"
+            }
+          ]
+        },
+        "options": {
+          "n": 1,
+          "topP": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        4160,
+        3712
+      ],
+      "id": "4861d001-07f9-4931-b9f1-98630413653a",
+      "name": "OpenAI"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        4768
+      ],
+      "id": "778fed8b-0a5f-4087-8520-91e4f4da03b0",
+      "name": "OpenRouter Chat Model"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        4304
+      ],
+      "id": "e83cd284-70dc-4692-886c-34af9e7ba270",
+      "name": "OpenRouter Chat Model1"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -2976,
+        3808
+      ],
+      "id": "e1c14be4-f992-488c-9430-e2b3d2684526",
+      "name": "Extraer Texto del PDF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5924ae87-4249-42b4-86eb-e869b2a6b5f0",
+              "leftValue": "={{ $binary.data0 ? 1 : 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3200,
+        3920
+      ],
+      "id": "56cd254f-687b-4c71-9100-c885495adf0e",
+      "name": "¿Es un archivo?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a7719560-6d8d-4a84-99ca-a5d3552214a2",
+              "name": "texto_completo",
+              "value": "=texto_completo: {{ $input.all().find(input => input.json.text) ? $('When chat message received').item.json.chatInput + '\\n\\nDOCUMENTO SUBIDO: ' + $input.all().find(input => input.json.text).json.text : $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2768,
+        3920
+      ],
+      "id": "0fb2de8c-1807-4b21-9027-3fde20329477",
+      "name": "Renombrar"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        3840
+      ],
+      "id": "f2571bc0-ac20-408e-9732-e69bf159e6df",
+      "name": "OpenRouter Chat Model2"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        5328
+      ],
+      "id": "e44bda7e-e974-4d81-b7a5-70d6836fb717",
+      "name": "OpenRouter Chat Model3"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3552,
+        3904
+      ],
+      "id": "4057d19e-c450-4b87-8268-b56b60d00d46",
+      "name": "OpenRouter Chat Model4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst outputs = Array.from(items, item => item.json?.output || '');\nreturn [\n  {\n    json: {\n      unified_response: outputs.filter(output => output).join('\\n\\n---RESPUESTA SIGUIENTE---\\n\\n'),\n      total_responses: outputs.filter(output => output).length,\n      individual_outputs: outputs.filter(output => output)\n    },\n    pairedItem: items.map((_, index) => ({ item: index }))\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3952,
+        3712
+      ],
+      "id": "b2d288dd-8f26-4999-b48a-9b908534a7bc",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        4240
+      ],
+      "id": "44b2f25d-4b96-4095-8153-0d22a4a4d8b7",
+      "name": "OpenRouter Chat Model5"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        3392
+      ],
+      "id": "0f4e89ce-1e1b-4405-a535-fe46737b467b",
+      "name": "OpenRouter Chat Model6"
+    },
+    {
+      "parameters": {
+        "content": "# 🚪 ENTRADA Y CONTROL : Procesamiento inicial de mensajes de chat y documentos PDF para preparar datos ",
+        "height": 2640,
+        "width": 2340
+      },
+      "id": "847a2d7b-10a3-431b-a5fc-6abaef8143f5",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3520,
+        2912
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# 🤖 CLASIFICACIÓN Y AGENTES EXPERTO: Inteligencia para dirigir la consulta al equipo adecuado y elección de legislación a consultar",
+        "height": 2680,
+        "width": 2900,
+        "color": 4
+      },
+      "id": "abed040f-1e9f-45ec-87ff-c3e11837da04",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# 🧠 CEREBRO DEL SISTEMA: El modelo genera la respuesta con precisión jurídica",
+        "height": 2680,
+        "width": 3100,
+        "color": 6
+      },
+      "id": "ccdea9aa-13f7-453a-b84d-34265bf85dcd",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1808,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# 🏛️ SISTEMA CONSULTAS MUNICIPALES MADRID\n# Sistema automatizado de procesamiento de consultas sobre normativa municipal\n# Total nodos: 29 • Arquitectura: 8 fases + 5 agentes especializados\n\n---\n\n# **📋 INVENTARIO COMPLETO DE NODOS**\n\n# **FASE 1: RECEPCIÓN Y CONTROL (Nodos 1-4)**\n🟢 Nodo 1: Webhook - Punto entrada del sistema\n❓ Nodo 2: IF ¿Es archivo? - Control condicional de flujo\n📄 Nodo 3a: Extraer Texto PDF - Procesador archivos (rama TRUE)\n➡️ Nodo 3b: Continuar Normal - Flujo estándar (rama FALSE)\n\n# **FASE 2: PREPARACIÓN DE DATOS (Nodos 5-8)**\n✏️ Nodo 5: Renombrar - Estandarización de variables\n🔗 Nodo 6: Union (Choose Branch) - Convergencia de flujos\n📋 Nodo 7: Airtable1 - Base de datos de resúmenes\n🧩 Nodo 8: Aggregate - Consolidador de resúmenes\n\n# **FASE 3: INVENTARIO Y CLASIFICACIÓN (Nodos 9-11)**\n🔍 Nodo 9: Buscar Documentos Google Drive - Inventario PDFs\n✏️ Nodo 10: Edit Fields - Preparación variables clave\n🔠 Nodo 11: Text Classifier - Clasificador multiétiqueta IA\n\n# **FASE 4: AGENTES ESPECIALIZADOS (Nodos 12-16)**\n🏢 Nodo 12: Agente_Delegaciones - Competencias municipales\n🐾 Nodo 13: Agente_Animales - Legislación protección animal\n🧪 Nodo 14: Agente_Higiene_Control - Higiene alimentaria/APPCC\n⚖️ Nodo 15: Agente_Marco_legal_y_consumo - Marco legal/etiquetado\n🛒 Nodo 16: Agente_Venta_ambulante - Comercio no sedentario\n\n# **FASE 5: ANÁLISIS Y REFINAMIENTO (Nodo 17)**\n🧠 Nodo 17: Analizar Pregunta - Validador y priorizador final\n\n# **🔄 PROCESAMIENTO DE DOCUMENTOS (LOOP INFERIOR)**\n🔄 Nodo 18: Procesar Documentos Uno a Uno - Loop over items\n✏️ Nodo 19: Edit Fields - Formateo de campos adicional\n📑 Nodo 20: Descargar Documento Google Drive - Descarga PDFs específicos\n📄 Nodo 21: Leer Texto del PDF - Extracción contenido textual\n💾 Nodo 22: Guardar Documento Memoria Temporal - Almacenamiento temporal\n\n# **RECUPERACIÓN Y LIMPIEZA (FLUJO SUPERIOR)**\n📥 Nodo 23: Recuperar Documento de Memoria - Acceso a documentos almacenados\n📋 Nodo 24: Borrar Documento de Memoria - Limpieza de memoria temporal\n\n# **GENERACIÓN DE RESPUESTA FINAL**\n🤖 Nodo 25: OpenAI GPT Model - Generación respuesta inteligente\n🎯 Nodo 26: Code - Procesamiento código personalizado\n💬 Nodo 27: OpenAI Chat Model - Modelo conversacional\n✏️ Nodo 28: Edit - Editor final de respuestas\n📤 Nodo 29: Mostrar Respuesta al Usuario - Output final\n\n---\n\n# **🏗️ ARQUITECTURA COMPLETA**\n# FLUJO PRINCIPAL (29 nodos totales)\n# Entrada → Webhook + Control archivos\n# Preparación → Datos + Airtable + Agregación\n# Inventario → Google Drive + Clasificación IA\n# Especialización → 5 agentes expertos paralelos\n# Consolidación → Análisis + Priorización\n# Loop Procesamiento → Procesar uno a uno + Descargar + Leer + Guardar en memoria\n# Recuperación → Recuperar de memoria + Borrar memoria temporal\n# Generación → OpenAI + Formateo + Respuesta final\n\n# **COBERTURA DE DOCUMENTOS**\n# 🏢 Delegaciones: 2 documentos (DISTRITOS + VICEALCALDÍA)\n# 🐾 Animales: 8 documentos (Leyes protección + Reglamentos)\n# 🧪 Higiene: 8 documentos (APPCC + Microbiología + Control)\n# ⚖️ Marco Legal: 8 documentos (Etiquetado + Consumo + Licencias)\n# 🛒 Venta Ambulante: 3 documentos (Ley + Decreto + Ordenanza)\n\n# **CARACTERÍSTICAS INTELIGENTES**\n# ✅ Clasificación múltiple: Una consulta activa varios agentes\n# ✅ Sistema puntuación: 1-100 (solo relevancia ≥50)\n# ✅ TOP 3 documentos: Optimización eficiencia\n# ✅ Memoria temporal: Gestión documentos activos\n# ✅ IA conversacional: Respuestas naturales y precisas\n\n# **📊 MÉTRICAS DEL SISTEMA**\n# 29 nodos operativos • 29 documentos normativos cubiertos\n# 5 áreas especializadas • 3 documentos máximo por respuesta\n# Tiempo procesamiento: Optimizado por IA\n# Precisión: Sistema de puntuación inteligente",
+        "height": 3280,
+        "width": 1500,
+        "color": 7
+      },
+      "id": "923107d9-45d1-4af0-bba4-ad136e1365c5",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4992,
+        2288
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1424,
+        4000
+      ],
+      "id": "0e993744-3799-459e-88fe-37e351e59130",
+      "name": "Merge1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst pdfsTotales = [];\nconst agentesTotales = new Set();\nconst nodosProcesadosTotales = new Set();\nconst nodosIgnoradosTotales = new Set();\n\nfor (const item of items) {\n  let rawOutput = item.json.output;\n  let parsed = {};\n\n  // Parsear 'output' si viene como string\n  if (typeof rawOutput === 'string') {\n    try {\n      parsed = JSON.parse(rawOutput);\n    } catch (e) {\n      continue;\n    }\n  } else if (typeof rawOutput === 'object') {\n    parsed = rawOutput;\n  }\n\n  // PDFs\n  if (Array.isArray(parsed.pdfs_relevantes)) {\n    pdfsTotales.push(...parsed.pdfs_relevantes);\n  }\n\n  // Agentes (si vinieran)\n  if (Array.isArray(parsed.agentes_activados)) {\n    parsed.agentes_activados.forEach(a => agentesTotales.add(a));\n  }\n\n  // Debug\n  const debug = item.json.debug;\n  if (typeof debug === 'string') {\n    try {\n      const dbg = JSON.parse(debug);\n      (dbg.nodosProcesados || []).forEach(n => nodosProcesadosTotales.add(n));\n      (dbg.nodosIgnorados || []).forEach(n => nodosIgnoradosTotales.add(n));\n    } catch (e) {}\n  } else if (typeof debug === 'object') {\n    (debug?.nodosProcesados || []).forEach(n => nodosProcesadosTotales.add(n));\n    (debug?.nodosIgnorados || []).forEach(n => nodosIgnoradosTotales.add(n));\n  }\n}\n\n// Filtrar y ordenar los PDF por relevancia\nconst relevanciaMinima = 50;\nconst pdfsFiltrados = pdfsTotales\n  .filter(pdf => pdf.relevancia >= relevanciaMinima)\n  .sort((a, b) => b.relevancia - a.relevancia);\n\n// Crear mensaje para OpenAI\nconst resumen = pdfsFiltrados.map(pdf =>\n  `• ${pdf.nombre} (${pdf.relevancia}): ${pdf.razon}`\n).join('\\n');\n\nreturn [\n  {\n    json: {\n      output: {\n        pdfs_relevantes: pdfsFiltrados,\n        agentes_activados: Array.from(agentesTotales),\n        total_documentos: pdfsFiltrados.length\n      },\n      debug: {\n        nodosProcesados: Array.from(nodosProcesadosTotales),\n        nodosIgnorados: Array.from(nodosIgnoradosTotales)\n      },\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are a legal assistant specialized in municipal regulations of Madrid. Be clear, concise, and accurate. Do not hallucinate information.\"\n        },\n        {\n          role: \"user\",\n          content: `Summarize the following documents related to food street vending in public parks in Madrid:\\n\\n${resumen}`\n        }\n      ]\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        4048
+      ],
+      "id": "e404c84e-cf02-4ecb-a88a-f9f76fd40eea",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "content": "![Error Screenshot](https://i.imgur.com/IGyH2Z6.png)\n\n# 🚨 ERROR EN NODO ANALIZAR PREGUNTA\n\n**Problema detectado:**\nError en el procesamiento del código del nodo 17\n\n**Pasos para solucionarlo:**\n1. Verificar sintaxis del código JavaScript\n2. Comprobar estructura de datos de entrada\n3. Validar nombres de variables\n4. Añadir manejo de errores try/catch\n5. Revisar formato de salida esperado\n\n**Código de depuración sugerido:**\n```javascript\ntry {\n  console.log('Input data:', JSON.stringify($input.all(), null, 2));\n  // Tu código aquí\n  return $input.all();\n} catch (error) {\n  console.error('Error:', error.message);\n  throw error;\n}\n```",
+        "height": 592,
+        "width": 1708
+      },
+      "id": "d4ef54ce-4058-4d72-94f6-aba6fdec0b25",
+      "name": "Sticky Note - Error Analysis",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3424,
+        3920
+      ],
+      "id": "402a0b84-7110-42ad-9e1b-4d156cacfecf",
+      "name": "When chat message received",
+      "webhookId": "993c761f-e774-4f4e-8213-63d026393422"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -2544,
+        3920
+      ],
+      "id": "97285ae9-6970-4ef7-a14e-16b046406698",
+      "name": "Union"
+    }
+  ],
+  "pinData": {
+    "Airtable1": [
+      {
+        "json": {
+          "id": "rec1xXjlOIUHei7lU",
+          "createdTime": "2025-06-09T09:55:23.000Z",
+          "Nombre": "(alimentos)LEY DE SEGURIDAD ALIMENTARIA",
+          "Resumen": "La Ley 17/2011, de 5 de julio, de Seguridad Alimentaria y Nutrición, establece el marco legal que regula toda la cadena alimentaria “de la granja a la mesa” en España. Su objetivo es garantizar la seguridad de los alimentos y piensos, proteger la salud pública, combatir la obesidad y frenar prácticas engañosas en la publicidad alimentaria. Se articula en 68 artículos distribuidos en un capítulo preliminar y 10 capítulos temáticos, además de 2 disposiciones adicionales, 1 transitoria, 1 derogatoria y 6 finales. Introduce principios clave como el análisis de riesgo, la trazabilidad obligatoria en toda la cadena alimentaria y el principio de precaución, permitiendo actuar incluso ante incertidumbre científica. Regula la prevención, el control oficial y los mecanismos de alerta rápida, incluyendo el Plan Nacional de Control, el sistema de comunicación de riesgos y la red estatal de laboratorios. Incorpora medidas nutricionales como la Estrategia NAOS para combatir la obesidad infantil, restringe la publicidad de alimentos insanos dirigida a menores de 15 años y prohíbe su presencia en centros escolares. Establece un régimen sancionador con infracciones graduadas (hasta 600.000 € y cierre de actividad) y tasas vinculadas a los controles que realiza la Agencia Española de Seguridad Alimentaria y Nutrición (AESAN). Debe consultarse por cualquier operador alimentario, autoridad sanitaria o profesional jurídico ante cuestiones de producción, importación, control, etiquetado, retirada de productos, sanciones, tasas o campañas de salud pública. En resumen: esta es la ley que entrena a toda la cadena alimentaria para que lo que llega a tu plato sea seguro, sano y sin trampas.",
+          "Attachments": [
+            {
+              "id": "attculpTSaRgUSHSM",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/wbBzSjzfzkUB0Kl7ZNNRMw/FhjVoVyZjufGjY3-vmfzC8_XZ-vQPmYjoFsONVb2qEO-11FYn1LO2ip4pe1-uatKVi-AM8pTSQHU-KvRx26P__E1UzZFlMIv0i2gtPgETjOyFPdDEcBIYbNekEaKHEo_UOr4hx9TpHU-on2EFD1UE8VuL8baF-Kx4qZb0ZpNYEn54vjtIbOwOFd9xc4ew5Ki/g-iaN6_nusvcnsyf5zebx72R_xBwfjRjJ62v_w1ibbk",
+              "filename": "LEY DE SEGURIDAD ALIMENTARIA.pdf",
+              "size": 351978,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/3lTMCoNdFiIqAZjjYSa60A/Z6BXHaUnjaCCulVFNRFrGY6DBf7qIc7VuAMF7IQWlG1FcrVPmwzrIRDT6iT4t018VfW7V42iMRs20jxFp6uI81-mE1aCIIRdlGsytZrnGAvAnGUay8RsmKbl6rp94RKQqDQ_rTPWh4BP7sqLFXGXKw/NLq2w-UehwEVosZxSUp_2yicBjP-4CUMBgpSvz1Zddg",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/uwxMvGueSFQP4YlZW7J4Qg/dFczjxa_7HmUg7vnHiJ8jHQRvLFrrjRedvpwbQojydGKc0PEY8hj42DWiSZIPRZvA3N-Cs6v0ft0axn-ziJ6T-ioBcpzkEs3ONe1jDZSYDxTPLXgXyerMdog-gZ9FJyox2Dfv-U8_qgiRhtHtI21nQ/XOjWPT4jgDjQg0u0T0_HXilo917D3AgMIYmAUkwSegk",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "rec7rkVfuL0o4Ozbj",
+          "createdTime": "2025-06-09T10:09:21.000Z",
+          "Nombre": "(alimentos)ORDENANZA LICENCIAS",
+          "Resumen": "La Ordenanza 6/2022, de Licencias y Declaraciones Responsables Urbanísticas del Ayuntamiento de Madrid, regula los procedimientos para autorizar obras, actividades y usos urbanísticos en la ciudad. Su objetivo es agilizar trámites, clarificar cuándo se necesita licencia o basta con una declaración responsable (DR), y reforzar el control sobre lo que se construye o se pone en marcha. Se estructura en 83 artículos distribuidos en 6 títulos, con 7 disposiciones adicionales, 2 transitorias, 2 derogatorias, 4 finales y 8 anexos. Establece el alcance del control municipal, una lista de actuaciones exentas de autorización y define instrumentos clave como el informe de viabilidad urbanística, que orienta a promotores antes de presentar proyectos. Regula la declaración responsable como opción “fast-track” para comenzar obras o actividades sin esperar resolución previa, aunque bajo control ex post. Introduce la licencia básica para arrancar estructuras de nueva planta mientras se tramita la licencia completa. Reconoce a las entidades colaboradoras urbanísticas (ECU), que revisan proyectos, emiten certificados y tramitan informes, con efectos equivalentes al informe municipal salvo objeciones. Incluye licencias exprés para actividades temporales y detalla mecanismos de control como órdenes de cese, clausura, revocación y multas coercitivas. El régimen sancionador fija multas de hasta 3.000 € según la gravedad, con posibilidad de cierre o revocación en caso de reincidencia. Debe consultarse siempre que se quiera iniciar una obra, abrir un local, organizar un evento o comprobar si un proyecto necesita licencia o puede ir por DR. En resumen: esta ordenanza es el gimnasio regulador donde entrenan todos los proyectos urbanísticos madrileños. Tú eliges si haces la sesión clásica (licencia) o exprés (DR + ECU), pero si te saltas el plan, prepárate para la multa.",
+          "Attachments": [
+            {
+              "id": "attoMV9Sxpy1iNG85",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/U8toQ0RrVs8J3wpicIrZOg/xgUnlPHenF9KGED2F40zPVdEZ0mzMZXvdRXc5tPrCf5pVF6S35ZV6jeeibDRGRCKtJSM6UjtRuzxM1BhFx-4DRRPM3-GbHXWU5K13apGqXOS13GCgmhiFuX41oRmBBUJXNlrBZ_b1ErR3yj1DXzPh-HNVS1YHMlJxwaDcPkXMy8/nGwcE85SMh7wLDt03Zk2akW630eOvDovXui7yFewdgE",
+              "filename": "ORDENANZA LICENCIAS.pdf",
+              "size": 303423,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/nhP2b6WQLJaZxq-e8hlI-w/Te_adhY1NZUgRDrL5zy6OmXgI09PCiZ9mOvyIrjqqSnevvpIFwZ3Oe0l6C8M2LxoJf5FX4H_1WrQWZqLnBIO1yH5eQla3ZEvKAhM_EQWZzUo0BFKctTfFtW1qSH2yp22N8RDF7kUEBbbds5cEY_ruQ/xzWJiO-9T4X8wGAkOnsNVJLc-hcAklhdBC1hySu_dLY",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/3Jsp4iOXb1NtXpOWJXqWxA/O7kFknB2QXA5tI-A9xVcGub2PY6AS5LgF3b5CX_6NwU9n5PXwa8hoG8jRliQVSPV0gsDmhwPS1niKG85UqhLAZoCwZtvu4jKTFc6sQis-uM2EzCZUcW6eAPRP-5n9IAP_knw1zILh09HFbjQaQOKYA/oVoXcvPYvqEUQvteoAD8yuZG11ax2Zawlitzi1A6SyM",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "rec9xZYMxA0WZDrfc",
+          "createdTime": "2025-06-04T14:23:48.000Z",
+          "Nombre": "[perros]RD REGISTROS ANIMALES PELIGROSOS AUTONOMICO.pdf",
+          "Id": "1VLkMazX0iuFz3zGuiFzkGzYcujFTh95C",
+          "Resumen": "El Decreto 30/2003, de 13 de marzo, regula en la Comunidad de Madrid la aplicación del Real Decreto 287/2002, desarrollando la Ley estatal 50/1999 sobre el régimen jurídico de la tenencia de perros potencialmente peligrosos. Establece normas específicas para la región y crea dos registros autonómicos: el Registro Central Informatizado de Perros Potencialmente Peligrosos y el Registro de Infractores. Define cómo deben tramitarse las licencias, los certificados de capacitación y la inscripción de los animales, así como las obligaciones de propietarios, cuidadores y adiestradores. Además, incluye tres anexos con los modelos oficiales de solicitud para: la licencia municipal (Anexo I), la inscripción del perro en el registro (Anexo II) y la certificación como adiestrador (Anexo III).\n\nEste Decreto debe consultarse siempre que se tramite cualquier gestión en la Comunidad de Madrid relacionada con perros potencialmente peligrosos: licencias, seguros, adiestramiento, certificados, registros, infracciones, etc. También se debe revisar cuando el animal resida en un municipio de menos de 5.000 habitantes, ya que establece el procedimiento especial para que estos municipios deleguen su competencia en la Comunidad mediante convenio.\n\nDebe consultarse junto al Real Decreto 287/2002 para verificar los requisitos generales exigibles en toda España (razas afectadas, medidas de seguridad, licencias, certificados) y con la Ley 50/1999, que es la norma base que define el marco legal general. En resumen: este Decreto es la norma principal para saber qué se exige y cómo se gestiona en Madrid, pero debe leerse siempre en conjunto con los textos estatales cuando se requiera una interpretación completa o una actuación reglada.",
+          "Attachments": [
+            {
+              "id": "attsOnYMUzDBqXZJV",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/eT1jKBcjm6ZuhURDmoIOEQ/rerLJ8TB8OZ12ZnqOH5sQ7ueNfzVOcMo-6s3mkz9JCNGhNc_Julg4Ffm90AkPWL7r7i8iNbhCsW75iT4H2GI6xltbRjPAvOLTHplPH4yP3iRKQujT8xbJTEe9y1avWh6nq_1ZV3QSjefiX7OO6ZII3Xw2a65W3-qnkCrllCJjahx8hztgVP24xclMGD7iTsY5veCrIj-QB-Y7xU8Cax6uQ/nt9XXb6Mb1fMvedwHCNkYbJnjYIcu_vZZ5QDjMXghYU",
+              "filename": "RD REGISTROS ANIMALES PELIGROSOS AUTONOMICO.pdf",
+              "size": 210299,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/yIx-GCznrCVtLrSohlpARQ/kOCypSL9vIogwoKgktU8VktKm4RDAd9KMOKBzoX5tkxVesWn8OHMOj_TjrxrxoUmOXP41aTahOZesmlqxnknS2oxVKL12_mTpv2YgIZOHixRY3YTDDG3YzYzB9NHFzK6iILa1OoOTy7nl0tqz8HSfw/kv4Lwfdskk9LVlBjamd7jZyjsu7H0vfTHSGBb4w01GE",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/29m1KptxoneAmJoVAp9e1Q/eIj1f9ls7r9Gs0BUbZsuOLtSu96UTRMb7Ss_1AaJtjYcg35lV1-M4nzJo7gjPYHQk1XlAS0u_O8TuzzonR9kqIcc1N_ruO5h0o5ucK3gYUsBeJbGZndwao22slI5hl5gJ6yM0GeseKAadlmlsIBfZg/wSUwKukzx3f-JQp7ROULBhJCssI0wokTTXdi3HPaJ6o",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recARxzezk444vrQk",
+          "createdTime": "2025-06-09T10:57:46.000Z",
+          "Nombre": "(alimentos)REGLAMENTO HIGIENE DE LOS ALIMENTOS",
+          "Resumen": "El Reglamento (CE) 853/2004 establece las normas específicas de higiene para los alimentos de origen animal en la Unión Europea. Complementa al Reglamento 852/2004 (higiene general) y se aplica a todos los operadores que produzcan, transformen o distribuyan carne, pescado, leche, huevos y derivados. Se organiza en 15 artículos y tres anexos. El Anexo I define categorías y productos; el Anexo II recoge normas transversales (APPCC, trazabilidad, marca de identificación CE); y el Anexo III impone requisitos detallados para cada tipo de alimento de origen animal (carnes, lácteos, ovoproductos, moluscos, pesca, gelatina, etc.). Exige autorización previa de establecimientos, uso exclusivo de agua potable (o autorizada), controles documentales, trazabilidad completa y la famosa “marca oval” con número y país. Regula también las importaciones, que deben cumplir los mismos estándares que los productos UE, y permite ciertas flexibilidades para métodos tradicionales sin comprometer la seguridad alimentaria. En resumen: este reglamento es la biblia higiénica del filete, la ostra, el huevo o el queso antes de llegar al plato europeo.\nDebe consultarse cuando se diseñan instalaciones de producción o transformación animal, se solicita autorización sanitaria, se planifican controles oficiales, se exporta o importa alimento de origen animal, o se evalúa el cumplimiento normativo en operadores del sector.",
+          "Attachments": [
+            {
+              "id": "attMUlgEmbjcg38Cq",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/P7SzNLJlN1-ZdDJ2lhqYWA/bWI90soWFPacsFahbJ8VVl2EouXjA-15OC2QqUnm3TQ-I3JZ1BIqL36SbUgnsBcloNNa1bCN0CFjCW8Is_uKwFj-vh_QggShaVNkB3kpcdrqQJ0Fkk5E9V-doWqmaQgvVgIwJ3sF_Y8lP8YNc6dRvBn1lHk3I9H9khTbHPrMRz4C221D5smomO4mFEDOMnlp/3bJNd5Sl21EZfRpC8ml6r7Xf_mygcChzI02WdCt2jeg",
+              "filename": "REGLAMENTO HIGIENE DE LOS ALIMENTOS.pdf",
+              "size": 506067,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/iVMnaLWpA3XbG523N8U32g/2PidPGpQ6HWVanS4Lfm7kmti0UdfT2G8r3N_6CdVc7s4xdtd5hXgOimT5ChBVzMvCmy2onU81ATEPhDeuqN0Zc6Kz8l38vZDT2cDvK8gDQXkoKaghnVIj0j12lumuayyc1nrGF5R4f1g4Sz_ckMWGA/TVq1jl3Wwe58UALIgdC2XiZ0v1AF8hxuh2hR11k_FoU",
+                  "width": 28,
+                  "height": 36
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/HrujOuEFeClVeTuUGK1mjQ/YK8fSmaesdyMrYaaYsBuDAdXlgCJrNziZ8zfCHgk1X9cpQivLiM7i0FuZXZGt9qFhofruB7iWK9TxvayYoLHyYWb3lKT6a0e_ZBUxE8P4M2qUxyrGWUWLrYF1j9chjrly0BqhuVUJ26ZyQfx7RqG8g/oKe-U40dH6EGN4vmymQNNw3dERHUOx-f4O-U6u-YR08",
+                  "width": 512,
+                  "height": 663
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recEBcOzmL39EbPad",
+          "createdTime": "2025-06-09T10:33:36.000Z",
+          "Nombre": "(alimentos)RD FLEXIBILIZACION EN MATERIA DE HIGIENE",
+          "Resumen": "El Real Decreto 1086/2020, de 9 de diciembre, regula las flexibilidades nacionales aplicables al “paquete de higiene” alimentaria europeo, adaptando su aplicación a las particularidades de productos tradicionales, pequeñas explotaciones y producción local. Consta de 32 artículos repartidos en 5 capítulos, más 3 disposiciones adicionales, 1 transitoria, 1 derogatoria, 5 finales y 6 anexos. Permite exenciones específicas para alimentos artesanales y tradicionales mediante procedimiento exprés (como el uso de madera, métodos de secado natural o sacrificio on-farm), y simplifica los requisitos estructurales en mataderos de baja capacidad (≤ 2.000 UGM/año). Regula el suministro directo de carne y productos de origen animal desde el productor al comercio minorista local, y establece condiciones higiénico-sanitarias adicionales para leche cruda, productos cinegéticos, calostro o moluscos terrestres. Refuerza el control oficial con obligaciones de trazabilidad, muestreo y documentación, e incluye un régimen sancionador propio. En resumen: este real decreto es el entrenamiento funcional del sistema alimentario rural y artesanal español. Ajusta normas sin perder forma.\nDebe consultarse cuando se aplican excepciones higiénico-sanitarias en explotaciones pequeñas, se comercializan productos tradicionales o locales, se realizan controles oficiales o se evalúan sanciones vinculadas a estas flexibilidades dentro del marco europeo.\n\n\n\n\n\n\n\n\n",
+          "Attachments": [
+            {
+              "id": "attbgpq4CnRewngmi",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/jvl1anRzQHW8m-3mqKG_PQ/zPOxDGx-S2pbOkzQmAwKJ0R1ry_LWP9BZftWkg6z-ARBcTOaG2MfUsM34F7bz-odaizoi77JkWRk5kYsb28T07oi90OzSLVo8233uHipxnw3jyX4Q0sd89ocWn8ggWug2LAeZHp2NlQB_KEUaD0ebD_H0Cn1f2vhXbNT1ZEQTUE0QEpmIRAoRphPmRdbUC_F/GZKEn2u_iKoGlokfVVBDu1aLyDNEBfYaR41N6qAh2aY",
+              "filename": "RD FLEXIBILIZACION EN MATERIA DE HIGIENE.pdf",
+              "size": 768687,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/lGgu-12x6W8dAixFYgy3mw/T0Ca48L-dqJRFCGK7c6nChZGGw0JQzChyWWwbpvyHhUO3F98M0BI8irtsfnGqZ4-THx5EQiNPM_2cR5PrhRrQjpBDo1UluLkXmi2R9X-wUDlrcC4Nkz7Npzcf4hBoYGA5Gqtkf7-ThUH7l2w8QHOdg/57EpziYBlLusI1nKH2sePJfnpy25C50OkK-EqEdTRMk",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/5KBJ_Z_THGplBLAaFyI-Fw/KKnc5UGxwyqrjbF-uzCvACXCBtIe1n1vzfdca4TM8usSgePDsy9p-0j2ceAG3jnadVcUjzUglN28s4Uns4JRQaS7PvYQHLJIsPp0nANc5VyGTY73yHgI9F6S_Uz_0N2T_yEoVZMFOHDphg6RK64l0Q/OVuRKO1JlQChQ-6jPHK8JYaZC5wlFHHY-78I3L6pnIc",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recIZ1wQZgcSNbo3O",
+          "createdTime": "2025-06-05T11:38:48.000Z",
+          "Nombre": "[perros y bienestar]ORDENANZA MUNICIPAL TENENCIA DE ANIMALES",
+          "Id": "1HDjEzyc0cRJM8QtHLh1lQcl8EhVF6bUK",
+          "Resumen": "La Ordenanza Reguladora de la Tenencia y Protección de los Animales del Ayuntamiento de Madrid regula la tenencia de animales en el municipio, garantizando la convivencia ciudadana, la seguridad y el bienestar animal. Establece condiciones para la tenencia de animales de compañía o de explotación (límite de 5 por vivienda, higiene, cuidados, vacunación, identificación, uso de correa/bozal), y prohíbe conductas como el maltrato, abandono, permanencia prolongada en vehículos, baño en fuentes públicas o venta ambulante.\n\nRegula la tenencia de animales potencialmente peligrosos (licencia, seguro, registro, custodia), así como el control de animales agresores, recogida de animales abandonados, adopciones, eutanasia y funcionamiento de criaderos o explotaciones. Incluye un régimen sancionador con infracciones de diferente gravedad (hasta 2.500.000 pesetas), que puede implicar retirada de animales o cierre de centros.\n\nDebe consultarse siempre que se intervenga en el ámbito municipal con animales: conflictos vecinales, inspecciones, control de animales agresores, adopciones, actividades con animales o aplicación de normativa sobre perros peligrosos. En resumen: es la norma clave a nivel municipal para regular la tenencia responsable y convivencia con animales en Madrid, y se aplica junto con las leyes autonómica 4/2016 y estatal 7/2023.",
+          "Attachments": [
+            {
+              "id": "attF6yfJ9Jyc2bd1d",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/wswoXk7Zo-gmRoUeVhvdFw/m9MGDTICmh3XYtJQXjFMXYwguyRribL0yhgNqGIDYVMHZ7q-Q43qmVrcVIWOM7qw9ktUKerhcyIc5VT2mtTLoN6UDSX5cO6s3IQAPJveXd8QI2IB4V4OsnQqcFEMrXTzG6AJcB_8hP5n07ofiylceKLNw8vzSm1ktFJ7onguVPDrrL2HX0mdOPpnLi6b4K6-/QoHsuvsO4_QsbatUAcICCuy2-B4_Ytx3BhgIE5qsK9c",
+              "filename": "ORDENANZA MUNICIPAL TENENCIA DE ANIMALES.pdf",
+              "size": 171544,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/LAZ6waQq2MYDXJ1oZm8-jA/j2xY_A0-P5MHAZrO3I1WQgBlR-wWV4sDc09B2J5ftW8qGHRTx67wv4KbmHU7t714yBa8DjqObJ5EO71kaSHC8J1ObRSPJrlL_yP8-FCdx7uLlHGK7_hOAKbHygZT1-grBvmIkrb4iHRinZhPjeGCkA/fCTk1Xcu8J36sERwbstMRYL7IlD5F_HIOeOxMctgSgQ",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/0ktwV4-DlyjAmDcKZSDeaQ/imWXQq9efnTFrfa58DIyscWbWJGXxJzyM6yk5FV1eKWW5tXePhMQ8M3Ik-c6peyKpivYkgl8YanTszYkXVSOqpRPawsF3cl4nZW6F0cqogYmtyAkZzJxNBCdc-QUAwjtdtgxghcBmUgw5i0vfaynUw/i1lfMdguToeSJdcWpQAOWGis4KVwV0rA_L2RjlKw-yE",
+                  "width": 512,
+                  "height": 725
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recKhQxi7CSrjmAn7",
+          "createdTime": "2025-06-09T09:54:28.000Z",
+          "Nombre": "(alimentos)LEY DE PROCEDIMIENTO ADMINISTRATIVO.pdf",
+          "Resumen": "La Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, regula el funcionamiento interno de todas las administraciones públicas en España. Define principios, procedimientos y garantías aplicables a todo el sector público (estatal, autonómico, local e institucional), incluyendo el procedimiento sancionador y el de responsabilidad patrimonial. Se estructura en 133 artículos, 7 títulos, 5 disposiciones adicionales, 5 transitorias, una derogatoria y 7 finales. Establece los principios generales de actuación, amplía la capacidad de obrar a grupos y entidades, regula la representación y crea registros electrónicos de apoderamientos. Reconoce derechos como el acceso digital, impone la obligación de relacionarse electrónicamente con la Administración y crea herramientas como el registro general, el archivo electrónico único y la red de oficinas de asistencia. Introduce el cómputo de plazos por horas y declara inhábiles los sábados. Regula la validez y eficacia de los actos administrativos, destacando las notificaciones electrónicas como vía preferente. Organiza el procedimiento común en fases (iniciación, instrucción, audiencia, resolución) e integra las especialidades sancionadora y patrimonial. Detalla los recursos administrativos (alzada, reposición, extraordinario), y consagra la potestad reglamentaria junto a los principios de buena regulación (eficacia, proporcionalidad, transparencia…). Establece mecanismos de ejecución forzosa como multas coercitivas, ejecución subsidiaria o embargo. Incorpora herramientas como la firma electrónica, el silencio administrativo positivo y la obligación de resolver expresamente. Entró en vigor el 2 de octubre de 2016, salvo el sistema de archivo y registro electrónicos, operativo desde abril de 2021. Debe consultarse para cualquier trámite administrativo: iniciar, gestionar, notificar, ejecutar, revisar, sancionar o impugnar actuaciones; también al implantar administración electrónica o redactar normas. En resumen: esta es la ley que marca la rutina de todas las Administraciones. Si no quieres que tu expediente se estrelle, aquí tienes tu plan de entrenamiento.",
+          "Attachments": [
+            {
+              "id": "attt2uMe4nohhXiJE",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/NM8yUQaFIxAKrf4tYAJfAA/komKi7m9H1kjS5C1td7prihJXu-OB6WF7plQULG3YNNIAPeU6hBvgvXZTJ17Aep-FZ5PwbtebBcz8Xc5gDHlPKRgSb94RE63G8qDhsrd88_7eTRTtHz6LIhc3CjhLLysRgS7cy-1SIUeub6jlqRdvGXQJ_yIK0Z3GiVkWnNClsb-WtjJwiAj0ZPfv6jlQdHV/DuqTNwpO5iY-aWfku0vV_Sfw2kO2nL2C02RaBvjpzoo",
+              "filename": "LEY DE PROCEDIMIENTO ADMINISTRATIVO.pdf",
+              "size": 579493,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/omxBTEdppHRqh-1BcREsWA/BRoc8IMqCevaO59n_CbG_Qxy9Q83bSMwNVTXxRfVsA5u7os56iPLki-lawKyPjwvHal5xIlQYG6x8r-F231gC9q06ccTQIsybbya8EH2NlJh309UjoVNvE6wfrOu0n32sD5IfkxejbpjU-pfR2XEww/rbcVpje_FDo40WaOFFs-jN9-J8tZs5GnIDSjMVjY_Pg",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/sLzc0kTz3F61ps7jGZLOXg/8BI5AJPCbneCkFX58KOPG6IBiAaDuoI7pXLgaV76jl7wfjQYbW7RdiCrrkjOt4hpj8wOsbYMiqUDS9WZNCryKEAZyKz39gHZnsyLZpgXw45UMioN3fOnPWI0zzjS6e_4D_5OtSdTjw44MhSnm0UZMQ/vzvUvZnsRU9Ui1F0881NDA3-DI-rIFgf9v4KU-SiwdU",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recLQZuCQZkJjDYBb",
+          "createdTime": "2025-06-09T10:33:22.000Z",
+          "Nombre": "(alimentos)RD ETIQUETADO",
+          "Resumen": "El Real Decreto 126/2015, de 27 de febrero, sobre información alimentaria de alimentos sin envasar y envasados a petición del comprador regula los requisitos que deben cumplir los alimentos presentados sin envasar, envasados en el punto de venta a petición del comprador o por el propio comercio para su venta inmediata. Desarrolla el artículo 44 del Reglamento (UE) 1169/2011 y establece qué información es obligatoria (denominación del alimento, alérgenos, ingredientes destacados, graduación alcohólica…), cómo debe facilitarse (etiquetas, carteles, verbalmente con respaldo documental), y en qué condiciones (visibilidad, legibilidad, idioma). Regula también la venta a distancia, fijando que la información esté disponible antes de la compra y obligatoriamente en el momento de entrega. Establece responsabilidades claras para los operadores alimentarios en cuanto a comunicación y conservación de la información. En resumen: esta norma es la guía básica para saber cómo informar correctamente en productos que no llevan envase industrial.\nDebe consultarse cuando se venden alimentos a granel, envasados en tienda, servidos en colectividades o comercializados online sin etiquetado previo, o cuando se diseñan protocolos de información en puntos de venta al por menor.",
+          "Attachments": [
+            {
+              "id": "attFp3nLJCuWmpOOl",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/GXsGQWUyDh5Rmty1V_uP8g/RAoGGTjI5Dbge8mISVlDM3rUwfCveGhudX4HdvdcuSNBz9JoYY7l_u4n7ShM1Ixgzf6HM5dD0-dCMYjFpgbewS7NtcruJT7AjlmXi7OwLQrSUsDu7DMM0IuSJiM4uaWfvWFcYJgnLqx9kyeSICE9icbyQuUVTLhNfJW291ORUXw/ZGp3ajIz-PEfcwktLRKzLugGGmgi4oDufy4jfdBD5ys",
+              "filename": "RD ETIQUETADO.pdf",
+              "size": 155576,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/FP490_Hq13tTvARz9Q5Htg/T8RkEb7G7CTckbQRsRAONwh6DwYtVv4r92YBJzvKRm4ao5ajdZvBs2b0ph6tDz2fpCehh2nhI77JpEPGHb83eX7mUfigZIIKvWg23pXiRXsLSA6AK3AHYSorigRkxtExlDBQl7wZu_yjrLPXfNWRNg/2mjUrKuJOLSBk9JmFgUKoYsYwluhAAqb3D135GSPCkU",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/7iLoOuNwuiZluKMyZvnl-w/SSWYZogcoOYAbQkNyudOkhxLoFvfgnTxk4rUN0xmQlibuyYAMbiTdxCz9iyH2muxitlztzzNYsVaYVuwn_K8JbpKgFbocR8l-b8NWPqEEeJIB2aJotMEk2WPUgKcrPSiXdUE1eEqzc8AGAIpsGECRw/A5t7CX3pbhftGVOs5TXNQG_rho8GaHJ4xhWz5RkUKHE",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recM9EYz9KiegU03V",
+          "createdTime": "2025-06-03T13:02:20.000Z",
+          "Nombre": "[Competencias] Funciones y atribuciones del Área de Vicealcaldía - Ayuntamiento 2025",
+          "Id": "1ZusLNerHimVpqW_eMME68qQ_mu-2DKXn",
+          "Resumen": "El Acuerdo de 29 de junio de 2023 de la Junta de Gobierno de la Ciudad de Madrid regula la organización y competencias del Área de Gobierno de Vicealcaldía, Portavoz, Seguridad y Emergencias. Abarca materias clave como Policía Municipal, Bomberos, SAMUR, emergencias, transparencia, portavocía institucional, comunicación, protección de datos, atención a la ciudadanía (Línea Madrid), participación y coordinación territorial.\n\nDebe consultarse siempre que se aborden competencias ejecutivas municipales relacionadas con seguridad, servicios de emergencia, comunicación institucional o gestión ciudadana, especialmente si afectan a toda la ciudad o requieren una actuación centralizada: campañas institucionales, grandes contratos, relaciones con el Pleno, subvenciones transversales, etc.\n\nSi la actuación es de ámbito local (por ejemplo, uso de espacios, actividades culturales o vecinales), y puede estar delegada a un distrito, es imprescindible consultar también el Acuerdo de organización de los Distritos, ya que ambos textos pueden ser complementarios.\n\nEn resumen: este es el texto clave para todo lo estratégico, central o transversal en las materias citadas. Ante cualquier duda sobre si la competencia pertenece al centro o al distrito, deben consultarse ambos acuerdos.",
+          "Attachments": [
+            {
+              "id": "atts79b0jUVUq93Vh",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/rona0B2tmJ1VYJgW2tRGOg/uQXW7aDF5aG7YPrTSWLEvnMQf2dIpdnm2iAPDze3q3vH2wmzkDdThCBZNA-D1m_oG-83JbDU8sRqVejVVs6tLBScqYQYPq_j9N0v7fLbyF1aBJtB02JrwEemZzfV1MDw8kKiT7tCLjIDBoAJ6T78_d01fM-R3YUPHR1ZTk3S1lFBzjMXuf_9jEqp6YW1NWn9pTyZSojVkgXgxz7tekovl6sjSIsG6aLkG7tc8QWVz8ztMVXDBSlTURZ6lXYyGLI7/-y8EZoXN9_qqt9rcqJJjU2YmF6qg51y19VjtxBMLvFY",
+              "filename": "[Competencias] Funciones y atribuciones del Área de Vicealcaldía - Ayuntamiento 2025.pdf",
+              "size": 192435,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/QPb3Pipkcs_JaTBNsgZFCg/iMk-s5eJ46lBXC75rEejvpFTl9tEL5h9mruNAqwrHXJi_q1UhcoGX7I0xzeT96z2NSYKQZkahpifR3VTSMsygTz3lXwIO9iqNaUN-eYHFDovAYd54aPWQiyi1pQ5HWl0rohGu9lldQttWw4yhuP1MQ/gu8NwazxybSaokufkXZdm1mCeHNjDzyBf7q8nNTMFFU",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/Oor2wsaPgKn-Iw43jMnh2A/3Dqoh6yHjdWgZfZE0uniu0q2N3OX313241xUf_7Q8e8hRSWjnlYD9BATcHCqq-1_uTzc4cQnh29A6Hg-Upw8ofKxbzuSlVv8Z8AgrJZYe0cN6spItNjliZbe8CUp5L_FvahjpYVwr5ERJd1XXEBX1g/Yw06ub5qHcvXNiBYH7fu7rZB_Yd4h1mZfHohgKtPr8A",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recNh8IITmAbU2Fm3",
+          "createdTime": "2025-06-04T14:17:09.000Z",
+          "Nombre": "[perros]RD DESARROLLO LEY PERROS PELIGROSOS ESTATAL",
+          "Id": "1oxgP6pKgCfW6dqTMDHnEnxw-j8hJU7E5",
+          "Resumen": "El Real Decreto 287/2002, de 22 de marzo, desarrolla la Ley 50/1999 sobre el régimen jurídico de la tenencia de animales potencialmente peligrosos en España. Este reglamento concreta qué razas de perros se consideran peligrosas (como Pit Bull Terrier, Rottweiler o Dogo Argentino), qué características físicas también pueden clasificarlos como tales, y cómo se determinará su peligrosidad incluso sin pertenecer a una raza listada. Establece los requisitos legales para obtener la licencia de tenencia (mayoría de edad, no tener antecedentes penales, certificado médico y psicológico, y seguro de responsabilidad civil de al menos 120.000 €). También fija las normas básicas de seguridad: uso obligatorio de bozal y correa corta en espacios públicos, uno por persona, registro obligatorio en el Ayuntamiento, identificación con microchip, y condiciones especiales de tenencia en domicilios o recintos. Debe consultarse siempre que se evalúe si un perro debe ser considerado legalmente peligroso, cuando se gestione la obtención o renovación de licencias, se establezcan medidas de seguridad, o se valore una sanción por tenencia indebida. Es el texto clave que operacionaliza y aplica la Ley estatal en la práctica.",
+          "Attachments": [
+            {
+              "id": "attfYW1ZM4gMsPrCi",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/fNJj3AiXNLQ7fxCvjHUPLg/SDSQa3DG3S26jGOSW4M9pzeV7_2mti0yRf_5oMp62s1kS9TTWgRNz18ZtYKyE89XyQuAuuhRK6BGK9f-2p6mYp48bNBWaXzgz9gOAbWGCL9997yGQGfw3n03K8FnJgqhu2IJZeUUR_5G121-hgRc6rFaQ8t35RLyKpzJKC_OrDpZffftOYu7XU3rHfAYAx6bK-qYZEK8F5AmlNo2Vx7TNw/CSgHON6NJHQPx4dUbrmDwDvl6d28RCjiHjgTRnM_po4",
+              "filename": "RD DESARROLLO LEY PERROS PELIGROSOS ESTATAL.pdf",
+              "size": 28047,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/xcShVe83wMJNDCd80BRmMA/UnSZGL3v1RB7oxgICqYGuyxLD7czciNH6e3oNmvWUtfCCMPRReg3yrBM2kTCEOUg_yAQeWorYCiNPAyP-09Uo8wQq_v8ki-Qp-emr_5pYwvrSk7y5LepAvd5sep0Fvp1qJOHyuRIe66FQ-o-GDdn8Q/GaehW9D_A7Vr6TjWGlAIsbdoxMe4xB_C6DNIdZZMHWs",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/UgfOjOIJipk7G2jPydvNNQ/J8IiIh2hiiudQgDrNrzGXcLzoL6lk822Twnw25RATzpfrBSTUZyoJJpBY-X3gPGsCASs0PqHIzlD0vYNxBDs_A2WkMr08LcHK3of6BErF5C4wh3WdShfygZGn5V11ORRW3uE9r5LzjD7ZypBVpOn3Q/y2MZnMc8OLHcQXYwSWjwxYKV4AElpMs_1ddLC8ZIrcU",
+                  "width": 512,
+                  "height": 725
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recPd2WrZJo5iGVmQ",
+          "createdTime": "2025-06-03T13:02:20.000Z",
+          "Nombre": "[Delegaciones] Acuerdo oficial de transferencia de competencias entre distritos",
+          "Id": "1EXEV9Lr-ZuYnoP2KvuZvubzZuxvKgcMv",
+          "Resumen": "El Acuerdo de 29 de junio de 2023 de la Junta de Gobierno de la Ciudad de Madrid regula la organización y competencias de los distritos del Ayuntamiento de Madrid. Es el documento clave que establece qué pueden hacer las Juntas Municipales de Distrito, los concejales presidentes y los órganos territoriales.\n\nDebe consultarse siempre que la actuación, competencia o duda afecte a un distrito concreto (como Usera, Chamberí o Salamanca). Es especialmente útil para saber si una competencia está delegada en los distritos o sigue siendo responsabilidad del área de gobierno central.\n\nTambién se debe revisar cuando se trate de gestión local: actividades culturales, deportivas o sociales, atención a mayores, mantenimiento de espacios públicos, participación ciudadana, gestión de quejas o supervisión de servicios descentralizados.\n\nEl acuerdo define claramente qué puede hacer cada órgano del distrito, cómo se organiza su personal, qué pueden contratar, en qué pueden gastar y cómo se coordinan con el Pleno o con otras áreas del Ayuntamiento.\n\nEn resumen: este es el texto principal para todo lo que afecte a la gestión territorial. Si algo ocurre dentro de un distrito, este es el primer documento que hay que revisar. Pero si la competencia no está expresamente delegada, hay que consultar también el acuerdo del área de gobierno correspondiente (como Vicealcaldía, SAMUR o Policía). Ante dudas, se consultan los dos.",
+          "Attachments": [
+            {
+              "id": "attBaqEomSyMP97oj",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/s82xA3Q5LhlHEpndljsMtw/JNOb76JI-g6HYrwrfWbezpZNQYvX54AcfNhvPMRJkKDeL3RnkSfy6iyDNe4qdSsivGAnykNlL4lbbDwQNWctkv_FONdKgD2X2ckrUT3bIfPvj5Hlj2NGL4700vIPV9aM3L1KaDrBfHrMkVUEeuMU-7ErDFqrAAZ1EuSI4cT69w1o90IcrM4jRhAeyX29er5IxkRM52qnsFd8_tY5LQ46SlP5ws585WQLXLP44MqkHxU/NMnUcOjvwBJ7HXNdxGeV7o2YqOjcVpeKAn1iMTiGxqc",
+              "filename": "[Delegaciones] Acuerdo oficial de transferencia de competencias entre distritos.pdf",
+              "size": 239696,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/VAyOVh1fKdF-huPbXGeOIQ/mpNwDrJl13Hd1K0PLimGPb_ewfk-BRN_TZLlBfBGgbbs_cmHMS7RP6dZytX-c6mk_16MSxYovo0-F6eIvSyDVWLTUBUuuOtjTqUi2dGqcMef8pAq-hfHxfy8BD--gNavthZvKbvilLL6jbqGbY2ptQ/_1rqlaDkcp_vgYk-gTYo2urFDp3ganAJCUpgoSf2SJQ",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/vFltaqHlLGxX-Wm76B7UwQ/ZIPtErVqLNbw-63Zl_GLuGaJRvUocgN6xH5O3rYglZv4iLpCUbUKnjVe1rleSAtPz87FHgYGBqDgDNz_cRgUJbbijicg8mXuPWqBZuG5hmULnto5LTB6WxWUCepBCkRYyLnrEWOW2n7o2CF20vebfQ/5G5TNzh6YWFQeRypZ96o_O3iwZNV-qlC7z6yHAnoSU8",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "generated",
+            "value": "",
+            "isStale": false
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recRZRhdxneaiOxNq",
+          "createdTime": "2025-06-09T10:58:41.000Z",
+          "Nombre": "(alimentos)REGLAMENTO HIGIENE DE PRODUCTOS ALIMENTICIOS",
+          "Resumen": "El Reglamento (CE) 852/2004, de 29 de abril, establece las normas generales de higiene para todos los productos alimenticios en la Unión Europea, desde la producción primaria hasta el consumidor final. Es la base del “Paquete Higiene” y se aplica a toda la cadena alimentaria, salvo a la cocina doméstica y la venta directa local a pequeña escala. Organizado en 17 artículos y 2 anexos, fija como pilar el sistema APPCC obligatorio (salvo en producción primaria), junto a la necesidad de registro o autorización de establecimientos antes de operar. El Anexo I recoge las buenas prácticas en el sector primario (piensos, medicamentos, higiene en granja), y el Anexo II define los requisitos básicos de los locales: limpieza, superficies, agua potable, residuos, higiene del personal y control de plagas. Permite a los Estados miembros introducir flexibilidad para métodos tradicionales o zonas con limitaciones estructurales, siempre sin comprometer la seguridad alimentaria. También impulsa la creación de guías voluntarias de buenas prácticas. En resumen: este reglamento es la tabla de calentamiento de toda actividad alimentaria en la UE, marcando los básicos de higiene y autocontrol que todo operador debe cumplir antes de salir a competir.\nDebe consultarse cuando se abre o se inspecciona un establecimiento alimentario, se diseña un plan APPCC, se elaboran guías de buenas prácticas, se regula el sector primario o se evalúa si un alimento puede circular legalmente en la cadena alimentaria europea.",
+          "Attachments": [
+            {
+              "id": "attITbevR23gQrnKm",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/tJl8tRiysX79NrcdGiE8XQ/p0pEQLShD-ZL3J8j6lmAy0_w0gHVHZ9WEHMNVT4NI9sCtCwjXf9gLzjdw65KSTV-jd8o4_a7E5kL7fC3WrTubFcWe72LUkjqwkm5RQ3r9sf8GfY6lURJ8NkJGL-z3U3JoFqNnegybI-lXNLvc5nPdLmJA2pq38Z7VG1WkAoyrguQ3jt-IoKeuI4v1qm1mxVIMrkN3d8lBb1i2-WO4FGkuw/1VyS_v5Mb8QcLmOvze7uWye0xHimLiDAHPh__iAz9f4",
+              "filename": "REGLAMENTO HIGIENE DE PRODUCTOS ALIMENTICIOS.pdf",
+              "size": 268932,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/GNU9po8tsv4MGj-Z_R0pEQ/md1vHUyCOH-SGY3AFnOyGEAPPoZKuU-w2GozFkCb-1uTvKAVylqttWD4VbWK8PmigW8A2I0PXB2cmA-jgZp2STjKAZQVdTXowmDjUZWqVsmeKtx0hKIKfNyYnzmGQOOLwkJ4Q-Zqre17IkTVB8UI2g/3WitbhR95h3ClJnVmjk9fii7u-VTKWP9byvYTWIF_yc",
+                  "width": 28,
+                  "height": 36
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/5xIBo7-quwJ56lpGSMJffw/fT0IkzMyf4zDe5QQF5PfDTJcUGFPNmua0NJ1VzmetQddLmS0Uj_VXVzZPSLTPnmKZE2Rzom1tLB6p15iOy2DiOI1a1hmIGOjR1vBmnPnCrlJiSU9pfw-QYySGWzc9vWX0BC8s3_gGvk5uDDAVQjgMA/rEMhm8F-Seoha2sPcNZDMgjSqT9sJdCRmpP8oOCtE3U",
+                  "width": 512,
+                  "height": 663
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recS99o1Risxtflxh",
+          "createdTime": "2025-06-09T10:09:32.000Z",
+          "Nombre": "(alimentos)OSP",
+          "Resumen": "La Ordenanza de Protección de la Salubridad Pública en la Ciudad de Madrid (OPS 2014), en vigor desde el 28 de mayo de 2014, regula las condiciones higiénico-sanitarias de actividades como la hostelería, centros infantiles, peluquerías, gimnasios, piscinas y servicios funerarios. Se estructura en 134 artículos repartidos en 7 libros, más 3 disposiciones transitorias, 1 derogatoria y 2 finales, derogando de golpe seis ordenanzas anteriores. Establece el régimen de inspección municipal, que otorga a los inspectores capacidad para inmovilizar productos, cerrar instalaciones o aplicar medidas cautelares si hay riesgo para la salud pública. Fija un sistema de sanciones graduadas (hasta 3.000 €) y coercitivas, repetibles cada 15 días hasta que se corrija el incumplimiento. Obliga a implantar sistemas de autocontrol (APPCC) en establecimientos alimentarios, mantener registros del personal formado, conservar muestras testigo y asegurar condiciones óptimas de higiene, trazabilidad y conservación. Regula los requisitos específicos para centros infantiles, peluquerías, centros de estética, instalaciones deportivas, piscinas y tanatorios, con estándares sobre espacio, ventilación, limpieza, personal y control de aguas o aires. Incluye medidas para el control de plagas urbanas y situaciones de insalubridad. Debe consultarse para cualquier actividad que implique manipulación de alimentos, prestación de servicios personales o gestión de instalaciones colectivas en Madrid. En resumen: la OPS 2014 es el plan de entrenamiento integral de la salubridad madrileña. Si estás en la barra, la cocina, el aula, la piscina o el tanatorio, este es tu manual para no perder la forma... ni la licencia.",
+          "Attachments": [
+            {
+              "id": "attjE1EDZZXpX0tXt",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/R9bhc0GwP46iDK_uJRVmCA/Qmb-BVkSlf-UT73FcAZ-P6MywGouqZLXXd7QTih5bm-JYXutKJkprxz7ZbI_SGoJq_TvzMUdzSZ-fO2Bqclh73DQQ8-ySc3Ha2V1KF9hsNIHJ0s3GTmWUQksz11zVwWPknyPgRiPpjsOL4LQCBQKzw/y86pmldkfPut1kZVn17r579E7iQxaNh5WAjml4Iy_RA",
+              "filename": "OSP.pdf",
+              "size": 224048,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/QplY245FBugKQMsriOiorQ/kHfOHjmmLwXRl_Kj816YAGvybqvvUZWzmqhZIt5fb3pqMNSGSetvsOap_MRBWCg5ADeFG6wZJSQZNf9EXxFhT9LXUuHzddDxWzEqP7duBz-hJkWujlUAJQkaSNH2ZrQdyiTjvgA6ugrXC5htrZGvKA/E22-Y5hnmNkS7yQGop_OlnRPm7r9fBBUfkQ9HO3lR_A",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/IMNCHiV5KGm5by7QYXWndg/pFdzkXNhbmE3Wsd1jybIHeUnJU72UQZeH3K_HQXvM3IWdqeKOUMtlytBLdGiHYw71XpsasALulYy7tw5M3D15h0ZtgL6iVDqotgjnMZZSbq-AuSeXAOvFf5x4k9XprhsIgjWCGmoDUijrFKbYiPx2A/THNl0ha4a7IAZgRUvRl3T0cH9K8e-ZTXYiL7QpI9H-M",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recTlSGnRFJv0YAZ6",
+          "createdTime": "2025-06-09T10:54:00.000Z",
+          "Nombre": "(alimentos)REGLAMENTO CRITERIOS MICROBIOLOGICOS DE ALIMENTOS",
+          "Resumen": "El Reglamento (CE) 2073/2005, de 15 de noviembre, establece los criterios microbiológicos que deben cumplir los alimentos en la Unión Europea para garantizar su seguridad e higiene. Se articula en 12 artículos y dos anexos: el Anexo I define los criterios de seguridad alimentaria (como ausencia de Salmonella o límites de Listeria en listos para comer) y los criterios de higiene del proceso (indicadores como aerobios, Enterobacteriaceae o Campylobacter), además de normas de muestreo y frecuencias ajustables según resultados. El Anexo II trata los estudios de vida útil, especialmente para Listeria monocytogenes, que debe mantenerse bajo control hasta la fecha de consumo. El reglamento obliga a aplicar sistemas de autocontrol basados en APPCC, permite el uso de métodos alternativos a los ISO si son equivalentes, y detalla medidas correctoras cuando se incumplen los criterios: retirada, reprocesado o etiquetado especial (\"cocinar bien\"). También exige analizar tendencias microbiológicas para anticipar riesgos. En resumen: este reglamento es el cronómetro y juez de línea de la seguridad alimentaria europea, que marca los límites, las repeticiones y las sanciones para mantener la microbiología bajo control.\nDebe consultarse cuando se diseñan planes APPCC, se validan productos listos para el consumo, se establece el sistema de muestreo en industria alimentaria, se gestiona una alerta microbiológica o se evalúa cumplimiento normativo en inspecciones sanitarias.",
+          "Attachments": [
+            {
+              "id": "attvBJvTdnHykIMiR",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/LW0leBkB-VWUBenSP2UsOA/PE-7VQB52zxsg7w-0xUgsLEBiixigTBMQf0p5gaDL5sJtIAG3G5Lkt33obY2ikU0alFK3gcOP0R7pyliLfHlykYRhDdqT8Lqnl2h54s6QdCmNLJnerBATkSfmWHDxdZCOYiE3bZ4bvOtma3dJuYm-groyMQ2w7zwcN_TMxFw4fZKqYnbAB6yVFjag46Gpy0yL67RznRHVbPETAp99cxNlQ/Ust-md25BQFni4TyXxdYoTnkmJx7YqfrOFpgRAe6sH8",
+              "filename": "REGLAMENTO CRITERIOS MICROBIOLOGICOS DE ALIMENTOS.pdf",
+              "size": 464475,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/wZHtxopDzZh0Q0FOPSEjcg/t3vTTpybhAV9s1amVpPL3T316mzUsfqXNxfVoDdA7OMelw8dRChkHup76O_1yn7__pDh37Ep6VSPyy6yOs3Yr9wMRkiOveuutIgfhFJSAJaG3LRjcUVZOAkXP7TmtC42kU-RuM-0xbphVWFjgBUPtw/ImlMuhw_VA26bupwFm74xddSK9yEz5uIfmC_tDddrfs",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/49EGehFSOqBIGz7F-HloKQ/4u1sZvfFCn1y527FDrhFwhv8hcARgFvHcfVBRYYxATdHqcE0cGW0PxIsiBQ-XQ62JyYvoMOse_fcnXDSMKv_uWEOL3_JKIfivHawTy9zPIOjJKKQ3TJdpzuAjaK_j7_Ti1JZmx5d5By2FDsM8WE-Dg/-7fdv-0cqncu0VPUKJ8PYh_XJRcl04z6bDzTW_1PM4A",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recW2cy0ZjHkYcmdm",
+          "createdTime": "2025-06-09T09:59:00.000Z",
+          "Nombre": "(alimentos)LEY PROTECCION CONSUMIDORES CAM",
+          "Resumen": "La Ley 11/1998, de 9 de julio, de Protección de los Consumidores de la Comunidad de Madrid, establece el marco autonómico para defender los derechos de los consumidores y mantener a raya prácticas abusivas. Se articula en 66 artículos distribuidos en 7 títulos, con 3 disposiciones adicionales, 1 transitoria y 3 finales. Reconoce derechos básicos como la salud y seguridad, la protección de intereses económicos, la información veraz, la educación al consumidor, la participación y la reparación de daños. Obliga a que todos los productos y servicios sean seguros, estén correctamente etiquetados y muestren de forma clara el precio total antes de la compra. Regula planes educativos, campañas públicas y otorga voz a asociaciones de consumidores con representación institucional y acceso a subvenciones. Refuerza el control de mercado mediante inspecciones con capacidad de levantar actas y tomar muestras con presunción de veracidad. Ante riesgos graves, permite medidas inmediatas como la retirada de productos o sanciones coercitivas. Establece un régimen sancionador con multas que van desde infracciones leves hasta muy graves, con sanciones económicas de hasta 100 millones de pesetas y posibilidad de cierre del establecimiento. Distribuye competencias entre Comunidad y ayuntamientos, y promueve la cooperación entre administraciones a través de una red autonómico-municipal para campañas y oficinas de atención al consumidor. Debe consultarse en cualquier actuación relacionada con control, inspección, sanción, etiquetado, garantías, precios, campañas informativas o resolución de conflictos en materia de consumo. En resumen: esta ley es tu entrenador personal en consumo, marcando los derechos, el control del juego y el régimen disciplinario para que el mercado madrileño esté en forma y sin trampas.\n\n\n\n\n\n\n\n\n",
+          "Attachments": [
+            {
+              "id": "attP5xV8GDkGV53eS",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/nzrq1x8PciW20qjGPOoQrw/kbuzn2qvK0IPDBmekblZXLOy6BZslNfnUhBjCt-wc0RTon3XvgSmLd2Odvu0LNcl8SYyU_Nx8cseqik_sYF9WEhivjjnM4FIOJe22Q6JghQdcACQdigklVCjoqFzUJJKSgrzKXX0yvk6-HQKUIrGLK0RIxVhj0fy_73kYG8zcL9PArqTK9IwzytcN9h-10V2/rGUjW_iocoNipIz-yZpaoAzZG2PB1-q80E_Pum-T4B4",
+              "filename": "LEY PROTECCION CONSUMIDORES CAM.pdf",
+              "size": 272907,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/vbKFTW6PgS0WDMOHukAX_A/DsrBASBtNs9TWKjOv-n-66gVEV11Z4S6ZIqLU-PymfIieMpf0n__Y-ScnPc1UGqc7SzWKD65Kq85EeAUMGyOx1x0lzcgAyLGQ9kazZisVq-Xh0RuwkIxyHtFA1BiSPW7uAjcgY-X9k6oweZZrCSEyA/R8C_ShMNclWiMQPZrHv3vpqkdsbjFq-5XHNaunlLFuE",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/tkTF1CRoGxj3b2e6Fxp-tg/Q3E_OrVAUDa3mLNBu0d2wf2Q3lxPPa0DXn6FfZj2ZjrCa2y3TaFuoN8immTqDUdB5gmgVTDRwKZsf_koC_F4-ngaRiZiBXSNDkU1v9DgXY3ZCSb8NN9q3tGpnIFUOC2IwlcIgSiJ-U8oYV1hv3k54Q/P0hCmNr5tjvcTDv2i2fNMKVq2O9_zmkL6UV9JWpQNCE",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recY0erjQOX9IyPI4",
+          "createdTime": "2025-06-03T13:02:20.000Z",
+          "Nombre": "[perros]LEY PERROS PELIGROSOS ESTATAL",
+          "Id": "1x9VCkqB4EH9l_G-In2Wya7uLXv5vXOVc",
+          "Resumen": "La Ley 50/1999 regula el régimen jurídico de la tenencia de animales potencialmente peligrosos en España, con especial atención a perros que, por su raza, morfología o comportamiento, puedan representar un riesgo para personas, bienes u otros animales. Establece los requisitos para su posesión (licencia, seguro, certificado psicológico, registro), las condiciones de comercio, cría, adiestramiento, identificación, transporte y esterilización, así como un régimen sancionador por infracciones administrativas. Debe consultarse siempre que se intervenga en temas relacionados con la tenencia, compraventa, registro, adiestramiento o control de animales peligrosos, especialmente en situaciones que impliquen seguridad ciudadana, conflictos legales, sanciones o intervención de autoridades. También es imprescindible al redactar normativas locales, autorizar criaderos o tramitar licencias. En resumen: esta es la norma estatal clave para regular la tenencia responsable de animales peligrosos y prevenir riesgos, y debe aplicarse junto con la normativa autonómica o municipal correspondiente.",
+          "Attachments": [
+            {
+              "id": "attprb94urDqr9rtW",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/J7eDeHZlyBGxSsLmUMIB0w/2pIEOs0_8Jf5U7vGX9VjXkpq3TDF9y2tkl3NiwM6LfMo7-RqdBuuWQ9dV18qwvgnpXUbqPoYWdKUPnQF6qteqPwMGdo2byVHv1efKAAEnaebtzdunaMuZrGPzv4tQKP9O8tMWW0ntQLkHrqYlmTIaRNfvjV5_WDRbnmMHko1t6U1kK3jbpbeTYLBy6h7iuQU/O61oVTVQIUam4eMsC6G9JNhGRRFcJC-VZX_1668kK3k",
+              "filename": "[perros]LEY PERROS PELIGROSOS ESTATAL.pdf",
+              "size": 154121,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/VbPtVkdAFtKjN7L3bQ8z_Q/GZkOLSRrQ_CHSh7FvXHmnnSwCCCCo_j0xWzBy16uQ7h1pi_sDeBADQcpGhXublIlDekf5NpFPUycfPj83NCHi8G71CUYJl7UeXONgUHNeYDtEQZyNr_dPyr1lfFt8m3mS-2Vm1-WawANHE_uZ5dysA/FNZbJTT64yBP6ymnR4WllAjoCkEKn8uBU407_sgG7TI",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/83rntkK-AhMBk7WHff3JEQ/027nuiwyOv8vNBVQ7G3PVRKwhfS6WJopWw4JnJS0iI4sf52UHDOYhBck41kFnpiJgv9kDWSOk_plRCVuuckBFhh7aQMCNHMnYStuuE9ufhFdvCwLSrMDU3XIrJGnBw9diNa8OYoCHsbNZUsE8y0yDA/PhpNmi2kQlIo_kZtTOpJ56LJAQBTjmSyZz-Ucpn_tfM",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recYnChTBMETtwOsp",
+          "createdTime": "2025-06-05T11:40:04.000Z",
+          "Nombre": "(bienestar)REGLAMENTO TRANSPORTE ANIMALES VIVOS.pdf",
+          "Id": "1ZatlvfNXx1HhczAz8ZShZTZsIaaR1Y5I",
+          "Resumen": "El Reglamento (CE) nº 1/2005 del Consejo, de 22 de diciembre de 2004, relativo a la protección de los animales durante el transporte y las operaciones conexas, establece el marco legal europeo para garantizar el bienestar de los animales vertebrados vivos durante su transporte con fines económicos o comerciales. Regula el transporte por carretera, tren, mar, aire y contenedores, incluyendo las operaciones de carga, descarga, manipulación, alimentación, descanso y documentación.\n\nEstablece requisitos técnicos para los vehículos (ventilación, espacio, iluminación, limpieza, suelos antideslizantes, sistemas de sujeción), prohíbe prácticas dolorosas (golpes, arrastres, descargas eléctricas innecesarias), y exige separación por especie o sexo. Regula también los tiempos máximos de viaje, tiempos mínimos de descanso, alimentación e hidratación, y especifica condiciones especiales para viajes largos o especies concretas (como bovinos, porcinos, aves o équidos). Para viajes prolongados, exige sistemas de navegación y control térmico desde 2007.\n\nDebe consultarse en cualquier intervención relacionada con transporte profesional o comercial de animales vivos: exportaciones, inspecciones, diseño de vehículos autorizados, ferias, centros de concentración, o control veterinario. En resumen: es la norma europea clave para evitar sufrimiento durante el transporte de animales vivos, garantizar su trazabilidad y proteger su salud en toda la cadena logística.",
+          "Attachments": [
+            {
+              "id": "att0VaWaKn7PudKm1",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/irh2z-HjzxP1Ze7d5uanuQ/QGdRBdn0aanuYgvrSi1mzSjCcTurffNq34ORM2KU_kHg9pEio4FVlExUNGPE7VkScPDL4eBa0J6S0Lysd3Lf7MhPszf2LEYvHLMsXuf7MhhUgxqdgY8yo98k07g8XandPxvu23HMvppL4w_flwaIh1s7IOsRCSBRHBQ9LGei5abaEKhX_dTnh6jfVr2t2nT-/L1Y5gAPTosVNz_nSGY3oy9hFVEeaKFWC4mbe3siA03s",
+              "filename": "REGLAMENTO TRANSPORTE ANIMALES VIVOS.pdf",
+              "size": 27610654,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/h-NJLhOhVwENA2D8nP_qCw/_NurO_g4mH_wWRNSQwJxHysowjGAzVfcKdMzsmI3L2vPrwLNlKqCMCSEApjJ87jJivsB04nwpT7AgdmOjWLXmNuR0jkktGNcmG0MTNungIqGSvqI1KDRcOqzB1X-iSIDiq9t0lLsp2K62kufgt_Bow/dZ5yarhOJCvSH5wzuNVDqgi-IhxdfiwnGz0HK_O2h54",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/Ve3Walev6M_XkX20qZqvSQ/OFU-bOOKGvYTxpuzkfXNXjHJRlPdojgv0biJSChoeQM1MgNaRFHV_mAMcHzX7ADAQpYeaSQiK7Tq2qVGsRL4G-4Eu9ThOMgr9nPLdADoQRMndKsuGGO6YBKFN5t3WIGEUxWBmHWWfyyl_VEm94MfgQ/dNBmEDjf1aQHIixTwhnQqgmu6-m6JD64zAKwnlxYWig",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recZCp7uqTRU4fyB6",
+          "createdTime": "2025-06-09T10:54:56.000Z",
+          "Nombre": "(alimentos)REGLAMENTO ETIQUETADO",
+          "Resumen": "El Reglamento (UE) 1169/2011, de 25 de octubre, establece las normas sobre la información alimentaria al consumidor en toda la Unión Europea, garantizando que los alimentos vayan acompañados de datos claros, veraces y útiles. Se organiza en 55 artículos distribuidos en 7 capítulos y 15 anexos, y fija obligaciones clave como el contenido mínimo de la etiqueta (denominación, ingredientes, alérgenos, cantidad neta, fecha, país de origen, valores nutricionales, etc.), la forma de presentación (letra ≥ 1,2 mm, legibilidad, idioma del país de venta) y reglas específicas para venta a distancia, alimentos exentos, envases pequeños o botellas retornables. Exige destacar alérgenos en negrita, declarar el origen cuando sea relevante y aplicar un etiquetado nutricional estandarizado desde 2016. Asigna la responsabilidad al operador que aparece en la etiqueta y armoniza el control en toda la UE. En resumen: este reglamento es el entrenador personal de cada etiqueta alimentaria, marcando qué decir, cómo decirlo y qué no puede faltar para que la información llegue al consumidor sin trampas.\nDebe consultarse cuando se diseña o revisa el etiquetado de cualquier alimento, se lanza un producto al mercado, se vende online o se realiza una inspección, garantizando que la información alimentaria cumpla con los requisitos legales en toda la cadena.",
+          "Attachments": [
+            {
+              "id": "attslwFjLDIKvRDVV",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/ruAUUTiQTEPQ3Xqo34vIog/jmaC92zBL4WS2AVSxqLh4cjqQV0tp5ybnwV1hXf7H3_MZCBCL2LXqCK_cIvpKxOzOcD_b6jY4VOx-PAiGaTutoJLM88LaPFI53B8RxG9tsyWA32BlPYI6xDOBuqtVANlW2fAZVmlpGnCYSROnaxfFp-ft-SSnWAesT50dTPsMjc/aiCWBgLHDTAZ50ftnjP-1b8sRaaNE_vVkGqsW3QBlBw",
+              "filename": "REGLAMENTO ETIQUETADO.pdf",
+              "size": 1220111,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/Ktnjv6TG8r1j_WxNEulxCg/Yt8H8-mB9-GdPIjt4RmdIOaMeEE8RNEbgto451kkJJ9uIVEctaixREW7el9OJ5iXsOOwRClzmxLKvhxUuc5FWobsZjzpe_45gPxYAb8ceSG2aZPf-5assN3bkZfRVGQL7X1NzITPFBrkir1sUtipTA/HC1UngY94Yf26LN0InMl_Ivlyz9nDeEKfk6wDcKG4ZQ",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/nCabe7P3VFj6QxI6N5jcOg/ZLKvCSBKPy-W2Qwrrgt9E-869rbRfo-dPFKuTPrgoVZ9trLdLTzVULIsvl_Kpie_jKI8zdaFlkXDPrGR5MquKC3u72WuGBpqka0zWvvTXU6KGERNSIEpvlZQyuzwSn9IOGOLgCJfH99824cQiEouwA/bdYHWydYiWfsHiDI9jBU1PPj1ZIPKJoOvLTAh-D9NHA",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recbFNmXdAnByOUMN",
+          "createdTime": "2025-06-08T08:20:21.000Z",
+          "Nombre": "(alimentos)LEY DE CALIDAD ALIMENTARIA",
+          "Resumen": "La Ley 28/2015 regula el marco básico para garantizar la calidad alimentaria en España, unificando criterios y competencias entre administraciones. Establece sistemas de control (autocontrol, inspección oficial, certificación acreditada), obligaciones de los operadores (trazabilidad, documentación, colaboración), y un régimen sancionador con infracciones leves, graves y muy graves, con multas de hasta 3 millones de euros. La ley impulsa la coordinación estatal mediante la Mesa de Coordinación de la Calidad Alimentaria, refuerza la lucha contra el fraude alimentario y busca homogeneizar el tratamiento normativo en todo el territorio nacional.\n\nDebe consultarse cuando se trabaje con producción, transformación o comercialización de alimentos en España, se diseñen protocolos de inspección o se desarrollen normas de calidad. Es clave para garantizar el cumplimiento legal, proteger al consumidor, fomentar la competitividad y asegurar la transparencia en la cadena alimentaria. Se aplica junto con la normativa europea, autonómica y sectorial correspondiente.\n\nEn resumen: Esta es la norma estatal esencial para controlar y sancionar la calidad alimentaria en España, con impacto directo en la industria, distribución y autoridades de control.",
+          "Attachments": [
+            {
+              "id": "attL4aekxGNtX3SKL",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/KhTbcTbDMCdNgdGDWuc29A/JOteh2TR4OWjD4MsrhEG91EIwbE_omRt75lQrU5MWgPj5gYlldeEzAk1m9b1efKVtR0tXqlyEle9TJVOf9wbEp5TXyhXW2ULSDsXsEgvC0Lqy6G4BDMbggN1gYYqTWr5V0QJBjz-6Ag25pGgnipLgBalAcBR9qejJe-LEVn3mMM_e80kXDWJKXsNThQH5yz3/SBwBYpjF0u39emfcbCHs9jPskd6lFlvySdPcoNnkPHA",
+              "filename": "LEY DE CALIDAD ALIMENTARIA.pdf",
+              "size": 216446,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/Vce0PlLUzY8CgfWwDVSrqg/fVmnnWzKN8bu39pmYtvR3qwJLnlXErLhka9AY-tYDUUpYsAgjdbmJPUKFM4W2rjFTSKg0dv_vhTz-9kR9fpJwyOKHS_aNlu1m2bfZZ7FKJpr1ZSmXHShZeQkOKmGij4e7hO569Z-LTCIz34PCFo95w/zGXPJmBE2GeC1QqAuCJIgdYCxffm3QdXpgqyd3QdydA",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/m19xA-6ASAHy9kncn4hn-Q/kdsNlnP2ZFM7XnzwFalUb-VAD_vdMt_XMJKnTc3v7DKD98wDEx5Wqv5JbmCC2e3qCmSxQT1Q3pX-2-usFiwBzaTi5ti5GYD7mmUwNlldoLjvmfQm65rYzwTKF17wuTxlcYzUL8m7INVIH5ncX7Qx5g/e1ZYsfN32ClFh7JeM5jMyTey57vQFDxHuBuYcqfWFx8",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recbXB3E0jvltlUaZ",
+          "createdTime": "2025-06-05T11:33:36.000Z",
+          "Nombre": "[bienestar]LEY PROTECCIÓN Y BIENESTAR ANIMAL ESTATAL",
+          "Id": "1tGi6L20r8nswCacz_cBaP6PGkDzQFNbC",
+          "Resumen": "\nLa Ley 7/2023, de 28 de marzo, de protección de los derechos y el bienestar de los animales establece el régimen jurídico general para garantizar la tenencia responsable, protección y convivencia con animales en España, reconociéndolos como seres sintientes. Regula la identificación, cuidados veterinarios, esterilización, seguros (obligatorios en el caso de perros), la cría, comercialización, transporte, adopción, eutanasia y acceso a espacios públicos. También fija los requisitos que deben cumplir los centros de protección animal y los criterios del Listado Positivo de especies que pueden tenerse como animales de compañía.\n\nAsimismo, establece restricciones a la tenencia de fauna silvestre, normas para la gestión de colonias felinas, planes frente al abandono, y protocolos de intervención en emergencias.\n\nDebe consultarse siempre que se actúe en materia de bienestar animal, adopciones, inspecciones, sanciones por maltrato o abandono, formación de propietarios, gestión de centros de acogida o cría, o cuando se planifiquen campañas de concienciación pública. También es indispensable para intervenir sobre fauna silvestre en cautividad, gestionar colonias urbanas o regular la tenencia legal y segura de animales.En resumen: es la norma estatal marco sobre bienestar y protección animal, que debe aplicarse junto con la normativa autonómica y municipal vigente.",
+          "Attachments": [
+            {
+              "id": "attsMHnXga7gxZOoK",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/a-yLGFhO8uIBeQsE6IHJUw/33pmQf7T_FvrMSJlKGUR4mCshm2DfLyXJ8SE0FU6UCQ9xsJYkar54rIH3tRSJ8BUllhunQOZPcZxtSEhVZKFTnXyFW2p7vRSQiHGPSJn-_82iPYSmQojOu4xEQTTusie6W48R0vzOO2EZm2E5tELSpik4u6_LImcMm46zbGiqBQHSze4J5hfUhq9SNZjE81r/yS8b1F0hT7j6vrTh7_YLPgbubHQUaFQCF8vgJNAqh6o",
+              "filename": "LEY PROTECCIÓN Y BIENESTAR ANIMAL ESTATAL.pdf",
+              "size": 545446,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/_9Ly9ARyzbqe-VpZ_eNNkw/aucOo4SDE8QuzITFlZh3qOPxIsvpkLV21RJjzeU2uYexEks8oe9zO-fsU-8A9NAVejaBmq-6-6KCzFYOWAed65BSu3eI2mlQIxUOm5kX6K7TPLGJt_9mEIXqq469s92KayY7P9_12rfRaUxp68rKpA/iLmMxbrnqTHkdBelmzEeRzziO_x589-pS4ilRDRBO-o",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/3lJ67KiZO3682rgNUa3lIA/IJMIqT20MkcqjTdOp73y0l92PTrtvZzNvhn5P2mfKX8BRs5-_q7qsB6AaFRO2Q_YJFw8Osm48RdhdURcICrOQJwFQ7mQDGXehXiQ4PRZ2S1IBvAa8O6j7WD8c2BtNMwBH4pZBTjP5m1OxHn1t5YJYQ/gdrjGdd8HLwL5-vHQAGIo6JVBoXIIlZo5lGE-hdmVkI",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recgW90D18Mv8mjju",
+          "createdTime": "2025-06-05T11:30:05.000Z",
+          "Nombre": "[bienestar]LEY DE PROTECCION DE LA FAUNA Y FLORA SILVESTRES AUTONOMICA",
+          "Id": "1O8EIaYBEgxA5ic5xga4BFhFjSO3XVYaA",
+          "Resumen": "La Ley 2/1991, de 14 de febrero, de protección y regulación de la fauna y flora silvestres en la Comunidad de Madrid regula la conservación de la biodiversidad silvestre en el ámbito autonómico, aplicando principios de sostenibilidad ecológica. Establece medidas para proteger especies autóctonas (catálogo regional, planes de recuperación, prohibiciones de captura o comercio), controlar la fauna no autóctona (especialmente especies invasoras), y regular actividades como la taxidermia, los zoológicos, la tenencia, venta o reintroducción de animales silvestres. También protege la flora silvestre y prevé la declaración de Espacios Naturales de Protección Temporal.\n\nContempla un régimen sancionador con multas que pueden llegar a 50 millones de pesetas, exigiendo además la restauración del daño ambiental causado.Debe consultarse cuando se actúe sobre fauna silvestre (autóctona o exótica), flora protegida, hábitats naturales, centros de recuperación, reintroducciones o cualquier intervención ecológica con impacto ambiental. Es clave para sanciones por infracción ambiental o para elaborar normativa local sobre conservación de la biodiversidad. En resumen: es la norma autonómica básica para proteger la fauna y flora silvestres en la Comunidad de Madrid.",
+          "Attachments": [
+            {
+              "id": "attRIRRefZSypJb5Y",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/XdsRZZP9c047bSI3AFZ4dA/rKuaHonyyQvGJaLlm1zYF9Facz_I0Bf-B9Iz9PN-9XccLHqrP0f6okzRYxshah6PpP8EHR0jlQEf-IrLckh-GkmD9BjTxlFA6czkodW9w7SK4iChCPpShaVWUxI6bMLlCDuIoiGPZL10b_SKZpACYl98TAzq26wr3K0DZEU-bQDJpEdDVvAr9v75UdyVlLU8ksSwho2LqHfpxgqZqH2mjg/sCgcqw6To0ZeGtc5g4AxHW2L40eYNKHnv-hYAyRJf6g",
+              "filename": "LEY DE PROTECCION DE LA FAUNA Y FLORA SILVESTRES AUTONOMICA.pdf",
+              "size": 225777,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/TWlEvQmjYGtfetJO5FhCwg/3eahgApW9kMXQxgX6yiHOkhDvPTjxAgkuwD1OwuG_EDFeKo7ANYyH0hReXmK4wT8slvDsyOb9UOz3UdmWDdBJqht8GPLqniRct7CaQaTyMCyaiGpTtP9P1RzIkJewqTWtAJZ3rNkFm_mgQa_pDYouQ/nRaqvKwrANKyyR3tDV7KhQ3wndCvba5Fn9dxWAJfntc",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/9lJpuMVmPytIMr5075JM3A/oZafJH3dCWapwPgOtV5MVOK_O_fY0DJS91LZyPaCTxZapEcm9Ow_xNJQf7mOJRVLzscJTFPqICjYa-7kqpceRHF9vlWdspXnxLQBHRnBiXSMA9GcrLrR6uOsjJtDIXArj2QKbwgTuShFNp6XDHXjIg/H4MrPXj2fAOSa0Q_DwfapErjeZFDN51eDtyhLkulhcI",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recjP0mEzKLv3WVO1",
+          "createdTime": "2025-06-09T11:00:35.000Z",
+          "Nombre": "(alimentos)REGLAMENTO SEGURIDAD ALIMENTARIA",
+          "Resumen": "El Reglamento (CE) 178/2002, de 28 de enero, es la columna vertebral del sistema alimentario europeo: establece los principios generales de la legislación alimentaria, la trazabilidad obligatoria, la seguridad de alimentos y piensos, y crea la EFSA y el sistema RASFF. Su estructura cubre desde los objetivos y definiciones (Cap. I), pasando por los principios clave como el análisis de riesgo (Art. 6), el principio de precaución (Art. 7) y la responsabilidad directa del operador (Arts. 17-20), hasta los mecanismos de respuesta rápida (Cap. IV) y procedimientos técnicos (Caps. V-VI). Trazabilidad (Art. 18) y seguridad (Arts. 14-15) son pilares: nada inseguro debe entrar en el mercado, y todo producto debe poder seguirse en ambas direcciones. La EFSA (Cap. III) asegura el componente científico, y el sistema RASFF (Arts. 50-52) permite alertas exprés entre Estados ante riesgos.\nDebe consultarse cuando se redacta normativa alimentaria, se evalúan riesgos, se diseña un sistema APPCC, se comunica una alerta alimentaria o se investiga una crisis sanitaria.",
+          "Attachments": [
+            {
+              "id": "attIOLrpUDU0sfM8F",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/eE7U-3TCw9MvHdfIKpff-w/-ta4inG9UTIvAgvgGXjH4hwhgfP035ekqJGuR5NSH-lR0LmSDoUQkUJroCbDh8UP5xGRMmQVv5lZpRBDSKnA8HTks9N36MnzH2H9RpUaWBn6Q91pCEgPnpeReb7Ij6ccMYLpEprL-UQZ8ZvpNVRveUzMVAG21fNG09WKhXMlFpN2Igx1_2n3rMjJDz2hyZtZ/wwZljwClOr-4gKIo7IoBzW5VsDKPC_FWndHCfLXQiCo",
+              "filename": "REGLAMENTO SEGURIDAD ALIMENTARIA.pdf",
+              "size": 255301,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/LfNZ2lMigT6Ma7g9LeKX_g/e27dulThQ70ZC-cg6oExtP2CDj2tGIgBNV5x0iDRqnAxyhen2xi6H55ljKWQopbkupB3xzqiz0rgef2dgKtYWeHbwVeJjN1sCiTVGjqKSf98bPjD1Hc--iNydh7xY1cr8T62-MXM33pmqQTVF-WJKg/U29NlwgatawsD0JdwoukVriyEv7KWG2KEI9k_P5aMvU",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/wM4DjapIT2LdRbfu5De5wA/cOfnA-Z2-MFKKGhIWW339RMhie_sXR_5sTSRjQIGvO6c8SKWl1Di6WbpbKzpSzYvztlTLinvMyfm8TtWmA9FqJkYnv9MVIzYwyT8C7djjxxf8mMKiwKmGiGhlr_CokYotdlHdbpRE4x7egjRt4PZDQ/xPiGTolVEfJ-B9eYZ9P9RFZ4NvYM5ju-QEXKqf01bhw",
+                  "width": 512,
+                  "height": 725
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "reckRIhLw4lPHoNbr",
+          "createdTime": "2025-06-05T11:37:09.000Z",
+          "Nombre": "[bienestar]LEY_PROTECCION_ANIMAL_2016 AUTONOMICA",
+          "Id": "1DiAJ2bJdT270Sxj3Z8FKshGd2bnaR0sQ",
+          "Resumen": "La Ley 4/2016, de 22 de julio, de protección de los animales de compañía de la Comunidad de Madrid regula la protección, bienestar y tenencia responsable de animales domésticos en el ámbito autonómico. Establece obligaciones para los tutores (alimentación, cuidados sanitarios, identificación, esterilización, educación, etc.) y prohíbe el maltrato, abandono, sacrificio injustificado o la utilización de animales como reclamo publicitario o en espectáculos con sufrimiento.\n\nLimita la cría y venta (solo criadores registrados), prohíbe la venta de perros, gatos y hurones en tiendas, y restringe la tenencia de determinadas especies peligrosas o exóticas invasoras. Además, crea registros autonómicos (identificación, criadores, entidades protectoras, núcleos zoológicos, etc.), y regula los requisitos para adopciones, casas de acogida, centros de protección y gestión de colonias felinas.\n\nIncluye un régimen sancionador con infracciones leves, graves y muy graves, y permite medidas como la retirada de animales en riesgo.Debe consultarse en cualquier intervención relativa al bienestar de animales de compañía en la Comunidad de Madrid: adopciones, comercio, inspecciones, control de colonias, campañas educativas, tenencia de especies no comunes, redacción de ordenanzas o sanciones. En resumen: esta es la norma autonómica clave para regular la protección animal doméstica en Madrid, en coordinación directa con la Ley estatal 7/2023 y las ordenanzas municipales.",
+          "Attachments": [
+            {
+              "id": "attXPjsgspBmdk2OG",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/xra5Jv8FgmBSjHa4ZHfkUw/Fb0NZIT27R-lnSk0M-aJWh_v31YTi92v2yWsa4HTU1gq9F536A28PpkYWPSOTvQodwBpepteInKzKE6gPhkR2L0rDkZlDblu0jnSPp5CWUnWaFNBi9dx8ch9_a9OTkK1qQMLy8Kyoc6M8yVDabrKgRHebaPEXtWep-GPdPegpMXg_3MSSfaDjYTyXNf6uoio/LU0_QQ0166ShfgZTAuc4S45wTI4JykqolGBivHZlMLA",
+              "filename": "LEY_PROTECCION_ANIMAL_2016 AUTONOMICA.pdf",
+              "size": 230445,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/_h2GBXT7mGy6QLifKonEDA/da8KrIfUmtqomxmua8TeHb9exwCneSeueWadVQmy2GY24kt_hLTnIo0NU6uYqyx4yU_mVNCIHRhalNZEAwbj1-Nteov61xjPaNICoc82zT4pBFP5ldLRs5O_H1etZzCM9kqJ1sCT19Vn2DdUnkMYow/V5iurbvdEYbmtPo9Zxc2gIWd2ZPtnnFbJGNEbKX_Bm8",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/jOwaw6M8sb65WY7Zrj0PdA/tDaXwFar0DxHEJd47jZRFzdEMMtvynfRIR8tugm11gdvqJ_947ZOqlxfSeFp072y_-T0dBsDUpRS2eqEVH7PeCqmPwVil2JYjMiDHN1oeu5pyfHCG76798zusI-YJRn_76jvh8D2P32QLI43_p_9FA/8YBMyV2zRT7XLoemvFEU9yvzUToBf5k9JvQJcfPwuG8",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "reclEuZJARGQaNQYv",
+          "createdTime": "2025-06-09T10:30:37.000Z",
+          "Nombre": "PLAN NACIONAL DE CONTROL OFICIAL DE CADENA ALIMENTARIA.pdf",
+          "Resumen": "El Plan Nacional de Control Oficial de la Cadena Alimentaria (PNCOCA) es el marco que coordina todos los controles oficiales sobre alimentos, piensos, sanidad animal y vegetal, bienestar animal y lucha contra el fraude en toda la cadena alimentaria, desde la producción primaria hasta el consumidor final. Es obligatorio en todos los Estados miembros de la UE, según el Reglamento (UE) 2017/625, y en España se aplica el actual PNCOCA 2021–2025 desde el 1 de enero de 2021. Participan cuatro ministerios con funciones coordinadoras (Agricultura, Sanidad, Consumo e Industria), aunque la ejecución principal recae en las comunidades autónomas, salvo los controles fronterizos. El plan persigue cuatro objetivos clave: reducir riesgos para la salud humana, animal y vegetal; asegurar el cumplimiento normativo en establecimientos alimentarios; garantizar la calidad y sostenibilidad del sistema agroalimentario (incluyendo producción ecológica y calidad diferenciada); y reforzar los controles en importación/exportación para prevenir fraudes y proteger la seguridad sanitaria y fitosanitaria. Se revisa anualmente y sus actuaciones se coordinan a través de conferencias sectoriales. En resumen: el PNCOCA es el “plan de entrenamiento nacional” que mantiene en forma a toda la cadena alimentaria española. Si produces, transformas, importas o vendes comida, aquí está tu programa de inspección y control para no quedarte fuera de juego.\nDebe consultarse cuando se planifican controles oficiales, se trabaja en importación/exportación de alimentos o productos agrarios, se implantan sistemas de autocontrol o trazabilidad, se diseñan programas públicos de inspección, o se necesita un marco de referencia común para aplicar la normativa alimentaria europea en cualquier punto de la cadena.\n\n\n\n\n\n\n\n\n",
+          "Attachments": [
+            {
+              "id": "attSRSULzxY2bhI11",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/vnPXW974qTDiP3520nIYLw/6QEgmqWVHhQA-d1hPHM8STeRIaP8mas5x_iq6ULOxocWpLFRUivtHwlr0gEKQY-xS7bTT663270uC7OYqdB22IeMiDtLW-wMeEns5g9eXWmpukJl6IsIyZ-fHlOz1eT-Yj7RxscaC6JkKAwvpGdZ061tObHFLh1BGZ1CHq6TBTx1mZS1PXnrME8JPwAPG9-j7xNtnbB_15QPASv6PmwxHA/EhPJqS_z3Q4qtt81SsqjSHh0pb-H0t5NYN0boQhpJc8",
+              "filename": "PLAN NACIONAL DE CONTROL OFICIAL DE CADENA ALIMENTARIA.pdf",
+              "size": 45795,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/F4IitdgDaRUYFi8MCL_76A/wG7ndDTZkvN1CXKoLe-gcIwtf70aHmr061xZGELr9fj6k27pXxuCCk-YpYMaHFUz22qiqJsCt4E9T0LSvx3q1g_vc5QYAcdoi7KbfEMUUmPPS4wgKRmO9q4mKcMmorbM2UmRSpwGbSrcxds56kX8dQ/1tQw9J8fZ7aaauRYB5s5i-1gTNMeUW3_ZnTxbp2lSm4",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/O_bDl7-o4FEmNqWKPvn_3w/Uwb7OCwExZVgvl_gyDOiW_TkHMtqwcgdSWzZknbXYtRgsipw_QYXO5S-15pE1UpjwaW2KDBD6v9cFY0UIqDz-eh7SQ90nivzYXvcP3XqTfatuXuA3TX8gZQFvHgf6wo6VMrledGMn7ErcEq2IpuH8A/oEtbFeKrtVGNo_9PwZ20qIWpN_WR_UM6GmhXBxiiFlU",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recnkuyijKmHjxBOq",
+          "createdTime": "2025-06-09T11:05:09.000Z",
+          "Nombre": "(ambulante)DECRETO DESARROLLO LEY VENTA AMBULANTE",
+          "Resumen": "El Decreto 17/1998, de 5 de febrero, es el reglamento que desarrolla la Ley 1/1997 y define los detalles prácticos para ejercer la venta ambulante en la Comunidad de Madrid. Divide sus 32 artículos en 6 capítulos y regula desde quién puede vender hasta cómo debe montarse un mercadillo, qué productos están prohibidos y qué documentación necesitas para no quedarte fuera de juego.\n\nExige estar al día con Hacienda y la Seguridad Social, emitir factura si se solicita, y contar con autorización municipal renovable anualmente. Los mercadillos deben ubicarse en suelos urbanos, con puestos numerados, dejando libres los pasillos y respetando el límite del 5 % de puestos por titular. Se prohíbe la venta de carne, pescado, lácteos frescos o bollería rellena salvo que estén envasados y conservados en frío. Además, regula otras modalidades como fiestas populares, puestos aislados y venta itinerante (sí, los clásicos food-trucks, también bajo control).\n\nImpone la inscripción en el Registro General de Comerciantes Ambulantes, con obtención y exhibición del Carné Profesional, sin el cual no hay instalación posible.\n\nDebe consultarse cuando se autoriza o inspecciona una actividad ambulante, se organiza un mercadillo, se evalúa si un producto puede venderse en la calle o se revisan condiciones de higiene, documentación y límites legales en puestos o licencias.",
+          "Attachments": [
+            {
+              "id": "attA8ljeiM9pTlJlA",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/yUVYX1CsT3QUp4IOOg0m3g/FRz1bkw7nlhzwVUSJJ5W9W7Z1-71bqWKWUNNQKMDJYxnw3QQ0gPVcRpkBqkVKQ2I5JHZxZM8HnF_o39oKJSczEepxI6kSwOetzyPBzwq4geCqfSdHIzzes9mn_c65UM30dmmW8T09Z2PEOP3HOdc1ioLPGmdYIepxuahdjIdo5XBOn73ejwbi15CaRsvqDub/0yWRNEzGBGcUbLWArgvS1o1KK6YvM24f0VTJkLOTdt0",
+              "filename": "DECRETO DESARROLLO LEY VENTA AMBULANTE.pdf",
+              "size": 75649,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/k9hoBeQPPR-gZj1hTAkZaA/UjUxJjMkjXHh8947GO5eOP6A46PUe-yZznydC-2xHwK_ENdkL5Yq6KSvSdCsEONT1Q38-ry71jJPG1Znw5hrAG5_OtiZIjKr9M3hnFt0XQcTaJNiP0c4n9nc8fzeRsO0sBmezH5FyijhiW0127fIZw/iViCXyAtkdE4JpIz3daPPdk8dhzM6tkG6ygAy69KAYI",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/Uyglv6bt5pDEF3z5Yb5aAQ/QP0c4V5cyDv6cwwdn15aw4zqEdZUB84__kFYD8ywAcqk1KBXf37URzhU3B-lKy-DG1WGdGcoXCraoYglt2SsGqAP0_bYq3wb17QIYV0f_sh1PKcIcxdq-jyky_Hai7QFFWdq-gACDnWd3FUJJFGobw/e0K1jzYmaH6JGQKJe0eE8llc6VqPyEP2JQwHeIXFt1w",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recvs0MF2OXk3cr58",
+          "createdTime": "2025-06-09T11:05:10.000Z",
+          "Nombre": "(ambulante)LEY VENTA AMBULANTE CAM",
+          "Resumen": "La Ley 1/1997, de 8 de enero, regula la venta ambulante en la Comunidad de Madrid, estableciendo los requisitos, modalidades y autorizaciones necesarias para ejercer esta actividad fuera de un establecimiento comercial permanente. Se aplica a mercadillos, festejos populares y puestos ocasionales en vía pública, excluyendo puestos fijos con concesión. Organizada en 4 capítulos, exige estar inscrito en el Registro de Comerciantes Ambulantes, obtener el Carné Profesional y contar con autorización municipal específica (mínimo 15 años de duración, prorrogable). Cada Ayuntamiento fija condiciones como ubicación, productos permitidos, número de puestos, tasas y normas de funcionamiento (dimensiones mínimas, limpieza, seguridad y horarios). La ley prohíbe expresamente la venta de productos alimentarios perecederos sin control sanitario suficiente o sin transformación. Incluye un régimen sancionador clasificado en faltas leves, graves y muy graves, con multas progresivas y posible decomiso. En resumen: esta ley es el manual operativo del “mercadillo legal”, que marca las normas de juego para vender con garantías, equidad y seguridad en las calles de Madrid.\n\nDebe consultarse cuando se solicita o renueva una autorización de venta ambulante, se regulan mercadillos municipales, se inspeccionan puestos callejeros o se impone una sanción por venta no autorizada.",
+          "Attachments": [
+            {
+              "id": "attxWIAJdj8ZDlOKO",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/Bw5xRLrpwNsEP_RtvPnbBQ/WHXp1UMoKjssZQrV0trabKGdum_bpUR3MQ043zQcf0Z_AJzBn1Gs8YqXVwDZg4ye0Q5vAU5m8dkvIIpNp-_PyZHJzydKwp4HC3N4bt-0TzRIxqDPfhmcFPQmoAcfTFra4UyDm_euLKsqqMIVQIADXcHwo5dm7_lDTIaLmaFJE38/NxCVNQU7OwvA6vnNJjwi3aD4nP6KdnO4FdOvvR5R-04",
+              "filename": "LEY VENTA AMBULANTE CAM.pdf",
+              "size": 366499,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/jvTAp9Kj7zqa8r_t8r6Kyw/aqphpJ1CuSwSDSn1Ibcxv_aoqgxGxLoRVmSiSaWvZCU70LVXA3Sjv1L1oaJN9PESOedEilMqFMYGZ26QjvLvIAUX3U2Z7uqdNrdK5fq9u0pI8d0YAeHKbCrGDKXZys59GmSaNEf_Xkb79GPYqsy2xA/Y7efaQu5yCvRRzD9Ph6iFHf12jy0oYZvHD5SRhb_cRE",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/4Uz8puTZ-U4N3UdDSIeKNw/7MaAdHsNzq7ZfVkmLVo-NarDydutYW1IoaozFMyv-ry6tBkGS6oXM31k0vXF2HCALUJpa37uvRF9ZhPH7maO99Njg816zdRP9Hz4We33txH_QFXzzxzazvsxu76Z8vy1e2fwz_fin3E65ikUXMqU3A/vo-yF3y2U2qXzbEmWRftvxZpP9msqVQvAFMs5Lwwv-4",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "recwwBRsRPmZ2xPy0",
+          "createdTime": "2025-06-09T10:33:52.000Z",
+          "Nombre": "(alimentos)RD REQUISITOS DE HIGIENE DE COMERCIO MENOR",
+          "Resumen": "El Real Decreto 1021/2022, de 13 de diciembre, establece los requisitos higiénico-sanitarios aplicables al comercio minorista alimentario en España, desde supermercados y bares hasta food-trucks y obradores locales. Consta de 22 artículos organizados en 4 capítulos, una derogatoria y 4 disposiciones finales, y sustituye a ocho reales decretos anteriores, modernizando y unificando criterios. Define qué cuenta como venta minorista o comida preparada y regula aspectos clave como temperaturas de conservación (carne, pescado, leche, congelados), normas para congelación y recongelación, control de anisakis, uso de huevos, condiciones para degustación in situ, presencia de mascotas en zonas de consumo, gestión de envases reutilizables, y donación o venta de alimentos defectuosos. Introduce medidas de flexibilización para la aplicación del sistema APPCC en pequeños establecimientos, incluyendo el uso de guías simplificadas y adaptaciones autorizadas por la autoridad competente. Establece las bases para los controles oficiales y remite al marco sancionador vigente. En resumen: este real decreto es el plan de entrenamiento higiénico para que el retail alimentario español funcione con seguridad y agilidad, sin romper la cadena ni inflarse a papeleo.\nDebe consultarse cuando se gestionan negocios de venta minorista o consumo inmediato de alimentos, se diseñan controles sanitarios, se aplican sistemas APPCC adaptados o se busca legalizar modelos alimentarios emergentes como cocinas domésticas, food-trucks, vending o experiencias con mascotas.",
+          "Attachments": [
+            {
+              "id": "attnSFwSFUZlsdBDv",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/L5PuLNZc9_uNN387tC5Yig/O56NJ73cT15h83fsjfzp4ri1BLgvYga_6huyXyU6WXCdk1rmsknthLD_01NFfvQ31v0VrzNdzrSz2UcMy_qNH6U2QKxdzbhtD7jP0Xpy_9UKdMD9pywfnwN3ZjlkSxbM7DPZTXbSVQgEKG3qWZiIa88XmsjKowiSKMF-Iz7U6N-V1yY-D5ki0eCaWxAhXRd_/141kKc2fHn1RCZBh8jiiT5a-fNq4fG1g4dkxogl5B_0",
+              "filename": "RD REQUISITOS DE HIGIENE DE COMERCIO MENOR.pdf",
+              "size": 227586,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/xg9Ub2zwjA-r-c7iAzEZgA/HaDkk6snJiV8B8EAcAuwV3SfDk6h8rWFTOCridAcWc-w21hu-hln4KIANpFiY9XDQpDO-aY22Dr1u3JmI-85dYFWcNFJ-v0ccu-3KFnUplmH-UZPqZVFGh1lQPI6p-rBYGUh2BWHKEkfDvbvKSp9bQ/LfGgw1BXaqOy1e0YeSGFH4Wq__bCzumsnXz5hP7ftI0",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/aSjWzy8O3Q6BwnI9kd9aGw/w9NnzqtJYfhK1llR-hbLehW-Qf4wqVQmhmnpRcyWbzHfAdJJ97GwFVghzMQOTBCzqVaumyhlVewFfrp8rVYyhkOHgcCrs9NocQ2x9dO5A58ASk_-hsJ_WDmet40-dJzyQHcHM_AdPkKh2tWAUtudKw/JlMjZFw9sAiRelNgAyCsV_xhJmCMahIX_LMwtJ4KT00",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "reczk93S2EVzzitup",
+          "createdTime": "2025-06-08T08:33:23.000Z",
+          "Nombre": "(alimentos)LEY DE ORDENACION SANITARIA CAM",
+          "Resumen": "La Ley 12/2001, de 21 de diciembre, de ordenación sanitaria de la Comunidad de Madrid, regula el sistema sanitario público autonómico. Establece la estructura, principios y funcionamiento del Sistema Sanitario de Madrid, garantizando la coordinación con el Sistema Nacional de Salud. Asegura la atención sanitaria bajo criterios de universalidad, equidad, eficiencia, calidad y participación ciudadana, y delimita competencias entre Comunidad Autónoma, municipios y sector privado.\n\nOrganiza el sistema público mediante entidades como el Servicio Madrileño de Salud (SERMAS), el Instituto Madrileño de la Salud y el Instituto de Salud Pública, cada uno con funciones específicas: desde la compra de servicios y gestión de centros hasta vigilancia epidemiológica y promoción de salud. Establece mecanismos de separación entre quienes contratan servicios sanitarios y quienes los proveen (compra vs. provisión).\n\nReconoce derechos y deberes de los ciudadanos en materia de salud, con acceso a información, respeto a la dignidad y posibilidad de reclamación a través del Defensor del Paciente. Regula también la participación social en el sistema, la educación sanitaria, la formación e investigación, la coordinación entre instituciones y el trabajo conjunto con entidades privadas.\n\nCrea instrumentos como el Contrato Sanitario y planes de asignación por objetivos sanitarios, e introduce medidas específicas para temas como drogodependencias y salud laboral. También contempla un régimen sancionador con infracciones y sanciones en materia sanitaria, y establece el marco para la colaboración público-privada, supervisada por la administración.\n\nDebe consultarse para todo lo relacionado con planificación, gestión, inspección, prestación, evaluación, formación, investigación, contratación, colaboración o sanción dentro del sistema sanitario público madrileño. En resumen: esta es la norma autonómica clave para regular la sanidad en Madrid, articulando asistencia pública, coordinación institucional y control sobre todos los agentes del sistema.",
+          "Attachments": [
+            {
+              "id": "attp7ACRb8QR5o89W",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/-idqDBPaY0x7GUnJioNKWA/w6K3BGxarY34xkD78c52w4JDo1Vbz9v3L_7EjCDJBdIuMZEeC2QcopUfv8ivo5juedaQ9NGQMHGlPBkZ-ZLkWurDuIXwrgFqtxNm3O7eco74sdPBf7YkU8Te49j6n5mSC7AJKu9uJYoLacQ5Tn-UQoSnpnReDqpwCBMGbmpIueL-u6bP9ylslRKN_tPObsn5/T2iJ84ND8V4wHJ-fbEK4CHXQHYlXMzaihT8Q993XHFY",
+              "filename": "LEY DE ORDENACION SANITARIA CAM.pdf",
+              "size": 483171,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/XpRp1o9Fi-xtXfarJye8sQ/hReWNBOsP_UMYMrFByrh8PKB94PdNTihPjw8elx3o1kajj16tMZERijvTo0MZpnx0iK2Z8iRf2f4Nkt4EiSZMNytarmhmrp3hEQlU-uIt8hai6aYbC_r9QmVRYdXpTONfCqv2nlxF0atcw85RYJhDQ/CcemYdW-_tei5Wttvx26oMONaByPUkkcDlDSYkzr0VI",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/zqH7NiT-FXWbyjeDDvoj-A/H-1_A24ucKaZa91lG1AyTCqwgDc3ppLC2XrW8h22jDgiQ2Jrq8WzI5Em_JoB6z9GXzMLlBtf8YnykJDmhECKnzHnLHxWpkzxiArhtqN-lmUFAxrQ8Z1UpG9f3JGU-2AQbM4NCOjcEFSFn_QbXlvS_g/96UXlf7r7ZB3xspoTfkQiOwp9a26gGB4br7Af2Jwwjs",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      },
+      {
+        "json": {
+          "id": "reczwK3S6Ux4FKPoT",
+          "createdTime": "2025-06-09T11:05:11.000Z",
+          "Nombre": "(ambulante)ORDENANZA VENTA AMBULANTE",
+          "Resumen": "La Ordenanza Municipal Reguladora de la Venta Ambulante de Madrid (2003) es el manual operativo para ejercer la venta no sedentaria en la capital. Divide sus normas en 5 títulos + anexos, y regula desde el marco legal hasta el tipo de producto, pasando por autorizaciones, higiene, inspección y sanciones.\n\nEstablece que solo pueden operar los vendedores con autorización municipal, carné profesional y registro previo, fijando un límite del 5 % de puestos por titular en cada mercadillo. Prohíbe la venta de productos perecederos sin envasado y conservación en frío, y exige el cumplimiento de condiciones higiénico-sanitarias, defensa del consumidor y visibilidad de precios. Las licencias tienen una duración de 15 años, son prorrogables y transmisibles con aviso previo al Ayuntamiento. Se contemplan varias modalidades: mercadillos periódicos, sectoriales, enclaves aislados y venta itinerante. La vigilancia corre a cargo de la inspección municipal, con faltas tipificadas como leves, graves o muy graves.\n\nDebe consultarse cuando se organiza o regula un mercadillo, se solicita o transmite una autorización, se inspecciona la actividad o se controlan condiciones higiénicas, documentación, tipos de productos y derechos del consumidor en el ámbito urbano madrileño.",
+          "Attachments": [
+            {
+              "id": "attOIReUcLefoTZ9Q",
+              "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/66ip_FXS6AxMQ68nv4Q7nw/V4MKFi7eVpSM3bxM7YZ3Fj1GCTi2kOhQrYC9NeaG6ln6fkkrUWrb2DZSMoDerdBj7bfJYTS0eTKPrGnYvReXgrGjoZmXjK-BIlk6EcOJo4rHD4poGZvOgb9SaG3mdjRywbTHXZSxupuZ57dPC9xr_MH0l_UEGTWyUcj9M5u2RmVnmVYvGQo7wfu0fWt2z2rN/tuSHQ3Fh9xTU030qI_rm4xnNibE9VYRTvDTn2tLohNw",
+              "filename": "ORDENANZA VENTA AMBULANTE.pdf",
+              "size": 148337,
+              "type": "application/pdf",
+              "thumbnails": {
+                "small": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/hjdZOO9ckJn_PRe5z4nrHQ/h36fXwXcN9CDeNahZ3JY-Csq3NTpeiiJGDJYmvN_0uEg3jORjnpZTrsKGvse7nkAd0kH-dAATMUgfCpR3RnRBDEk6Um8bhIqwW0m-dBKph67dzunhIJkVneZEZTJGeniWop8MLA6BayxynBr04TDwg/G8rbKFHhJSZbU5LUH7tumUo4BdNetpVdOaNrkGbkepY",
+                  "width": 25,
+                  "height": 35
+                },
+                "large": {
+                  "url": "https://v5.airtableusercontent.com/v3/u/42/42/1749924000000/sHXcFXiM94yo-59b7CoQkA/k8Ab1XXl7Y7zg-fYslksmqMbzTsjzYA3d0N5r_ch2g237-QS1NxWGacpwnmNH_64AA6Ix2gHBcCbhjw_mUNHvdpsh5wh80U9gIMIOZ8_Bp2KKzcoD3qj-szBcQGWAimHzCtxXqnywW7a7zVllJ_ZYQ/zWj22621KsF3nkQA23jj2jPEtXFdZCK5uSkf9Iri3dM",
+                  "width": 512,
+                  "height": 724
+                }
+              }
+            }
+          ],
+          "Attachment Summary": {
+            "state": "empty",
+            "value": null,
+            "isStale": true
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    " 🔍 Buscar Documentos en Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": " 🔍 Buscar Documentos en Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Analizar Pregunta ": {
+      "main": [
+        [
+          {
+            "node": "LIMPIAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📂 Procesar Documentos Uno a Uno": {
+      "main": [
+        [
+          {
+            "node": " 📤 Recuperar Documento de Memoria",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📁 Descargar Documento PDF": {
+      "main": [
+        [
+          {
+            "node": "📄 Leer Texto del Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Leer Texto del Documento": {
+      "main": [
+        [
+          {
+            "node": "📦 Guardar Documento en Memoria Temporal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Guardar Documento en Memoria Temporal": {
+      "main": [
+        [
+          {
+            "node": "📂 Procesar Documentos Uno a Uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " 📤 Recuperar Documento de Memoria": {
+      "main": [
+        [
+          {
+            "node": "🧽 Borrar Documento de Memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧽 Borrar Documento de Memoria": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agente Inteligente ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Memoria Contextual ": {
+      "ai_memory": [
+        [
+          {
+            "node": "🤖 Agente Inteligente ",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agente Inteligente ": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LIMPIAR": {
+      "main": [
+        [
+          {
+            "node": "📂 Procesar Documentos Uno a Uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "📁 Descargar Documento PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "🧩 Agente_Delegaciones",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🐾 Agente_Animales",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AGENTE_ALIMENTACIÓN_1: HIGIENE Y CONTROL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": " AGENTE_ALIMENTACIÓN_2: MARCO LEGAL Y CONSUMO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🍽️ Agente_Venta Ambulante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Agente_Delegaciones": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🐾 Agente_Animales": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "🍽️ Agente_Venta Ambulante": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "AGENTE_ALIMENTACIÓN_1: HIGIENE Y CONTROL": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    " AGENTE_ALIMENTACIÓN_2: MARCO LEGAL Y CONSUMO": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "📝 Mostrar Respuesta al Usuario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": " AGENTE_ALIMENTACIÓN_2: MARCO LEGAL Y CONSUMO",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AGENTE_ALIMENTACIÓN_1: HIGIENE Y CONTROL",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Texto del PDF": {
+      "main": [
+        [
+          {
+            "node": "Renombrar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es un archivo?": {
+      "main": [
+        [
+          {
+            "node": "Extraer Texto del PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Renombrar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Renombrar": {
+      "main": [
+        [
+          {
+            "node": "Union",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Union",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🐾 Agente_Animales",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🍽️ Agente_Venta Ambulante",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🤖 Agente Inteligente ",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🧩 Agente_Delegaciones",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "🧠 Analizar Pregunta ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "¿Es un archivo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Union": {
+      "main": [
+        [
+          {
+            "node": "Airtable1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "28d3446c-4fd3-475b-a73d-f6a131a39d2a",
+  "meta": {
+    "instanceId": "6a977e4494a8efa08ce5a2766c28f706240acd9f886f259d83e6cb0d392ee762"
+  },
+  "id": "ZdzxI4PTZHPwXf8j",
+  "tags": [
+    {
+      "name": "Distrito Latina",
+      "id": "FTF4GQmAGekB6MzV",
+      "updatedAt": "2026-06-14T11:13:34.895Z",
+      "createdAt": "2026-06-14T11:13:34.895Z"
+    }
+  ]
+}
